@@ -2,6 +2,14 @@
 
 **Lokale, kostenlose KI-Fehlererkennung für Bambu-Lab-Drucker in Home Assistant.**
 
+[![Druckermodus: LAN-only + Developer-Modus](https://img.shields.io/badge/Drucker-LAN--only%20%2B%20Developer--Modus-orange)](#druckermodus-lan-only--developer-modus)
+
+> [!IMPORTANT]
+> **Gemacht für Bambu-Lab-Drucker im _LAN-only-Modus_ mit eingeschaltetem _Developer-Modus_.**
+> Home Assistant spricht lokal mit dem Drucker (ha-bambulab, lokales MQTT) – ohne Bambu-Cloud.
+> Der Developer-Modus ist nötig, damit Home Assistant Befehle wie **Pausieren / Fortsetzen**
+> senden darf. Mit Cloud verbundene Drucker sind nicht getestet.
+
 *English: [README.md](README.md)* · 📖 **[Wiki](https://github.com/noskillor/bambu-print-guard/wiki/Deutsch)** – ausführliche Anleitungen, FAQ
 
 bambu-print-guard beobachtet während eines Drucks die Druckerkamera, erkennt Spaghetti,
@@ -44,6 +52,20 @@ Gemessen auf Intel i5-9500 (2 Kerne): ~0,35 s pro Bild, ~360 MB RAM für das Mod
   ca. 1 GB freier RAM während des Drucks
 - Getestet mit **P1S**; andere Bambu-Drucker sollten gehen, solange HA eine Kamera-Entität
   und einen Druckstatus-Sensor hat.
+
+## Druckermodus: LAN-only + Developer-Modus
+
+| Einstellung | Wozu |
+|---|---|
+| **LAN-only-Modus** | Home Assistant (ha-bambulab) liest Status, Schichten und Kamera direkt im Heimnetz vom Drucker |
+| **Developer-Modus** | erlaubt Home Assistant, Befehle zu senden – nötig für *Pausieren* / *Fortsetzen*. Ohne ihn ignoriert der Drucker Befehle von Drittprogrammen |
+
+Am Drucker: *Einstellungen → Netzwerk / WLAN → **LAN-only-Modus** an*, danach ***Developer-Modus*** an
+(Menünamen je nach Modell und Firmware leicht unterschiedlich). Den angezeigten **Zugangscode**
+notieren und beim Einrichten von ha-bambulab im *lokalen / LAN*-Modus verwenden.
+
+Im LAN-only-Modus sind Bambu Handy und die Bambu-Cloud nicht verfügbar – gedruckt wird über
+Bambu Studio / Orca Slicer im Netzwerk.
 
 ## Installation
 

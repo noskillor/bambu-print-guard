@@ -4,6 +4,15 @@
 
 [![CI](https://github.com/noskillor/bambu-print-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/noskillor/bambu-print-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Printer mode: LAN-only + Developer mode](https://img.shields.io/badge/printer-LAN--only%20%2B%20Developer%20mode-orange)](#printer-mode-lan-only--developer-mode)
+[![Home Assistant: ha-bambulab](https://img.shields.io/badge/Home%20Assistant-ha--bambulab-41BDF5)](https://github.com/greghesp/ha-bambulab)
+
+> [!IMPORTANT]
+> **Made for Bambu Lab printers in _LAN-only mode_ with _Developer mode_ enabled.**
+> Home Assistant talks to the printer locally ([ha-bambulab](https://github.com/greghesp/ha-bambulab),
+> local MQTT) – no Bambu cloud involved. Developer mode is required so Home Assistant may send
+> commands such as **Pause / Resume**. Cloud-connected printers are untested.
+> → [How to enable it](#printer-mode-lan-only--developer-mode)
 
 *Deutsche Anleitung: [README.de.md](README.de.md)* · 📖 **[Wiki](https://github.com/noskillor/bambu-print-guard/wiki)** – step-by-step guides, tuning, FAQ
 
@@ -58,6 +67,22 @@ Measured on an Intel i5-9500 (2 cores): ~0.35 s per image, ~360 MB RAM for the m
   – about 1 GB free RAM while printing
 - Tested with a **P1S**. Other Bambu printers (X1, P1P, A1) should work as long as
   Home Assistant has a camera entity and a print-status sensor for them.
+
+## Printer mode: LAN-only + Developer mode
+
+| Setting | Why |
+|---|---|
+| **LAN-only mode** | Home Assistant (ha-bambulab) reads status, layers and camera directly from the printer on your network |
+| **Developer mode** | allows Home Assistant to send commands – needed for the *Pause* / *Resume* buttons. Without it the printer ignores third-party commands |
+
+On the printer: *Settings → Network / WLAN → **LAN Only Mode** on*, then ***Developer Mode*** on
+(menu names vary slightly by model and firmware). Note the **access code** shown there and use it
+when adding the printer to ha-bambulab in *local / LAN* mode.
+
+> [!NOTE]
+> In LAN-only mode Bambu Handy and the Bambu cloud are not available; print from Bambu Studio /
+> Orca Slicer over LAN. Detection itself only needs the camera and status entities in Home Assistant –
+> cloud-connected setups may work, but are not tested.
 
 ## Installation
 
