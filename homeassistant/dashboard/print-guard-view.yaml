@@ -284,7 +284,7 @@ sections:
         card:
           type: markdown
           content: |-
-            <details><summary><b>What do the sliders mean?</b></summary>
+            <details open><summary><b>What do the sliders mean?</b></summary>
             <dl>
             <dt><ha-icon icon="mdi:alarm-light-outline"></ha-icon> <b>Alert threshold</b></dt><dd>How sure the AI must be over several frames before an alert is sent. Higher = fewer false alarms, but later warning.</dd><br>
             <dt><ha-icon icon="mdi:image-filter-center-focus"></ha-icon> <b>Frame threshold</b></dt><dd>When a <i>single</i> frame counts as suspicious.</dd><br>
