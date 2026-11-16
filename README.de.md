@@ -2,7 +2,7 @@
 
 **Lokale, kostenlose KI-Fehlererkennung für Bambu-Lab-Drucker in Home Assistant.**
 
-*English: [README.md](README.md)*
+*English: [README.md](README.md)* · 📖 **[Wiki](https://github.com/noskillor/bambu-print-guard/wiki/Deutsch)** – ausführliche Anleitungen, FAQ
 
 bambu-print-guard beobachtet während eines Drucks die Druckerkamera, erkennt Spaghetti,
 abgelöste Teile und Klumpen mit dem Open-Source-Modell von

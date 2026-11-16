@@ -5,7 +5,7 @@
 [![CI](https://github.com/noskillor/bambu-print-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/noskillor/bambu-print-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-*Deutsche Anleitung: [README.de.md](README.de.md)*
+*Deutsche Anleitung: [README.de.md](README.de.md)* · 📖 **[Wiki](https://github.com/noskillor/bambu-print-guard/wiki)** – step-by-step guides, tuning, FAQ
 
 bambu-print-guard watches your printer's camera while a print is running, detects
 spaghetti, detached parts and blobs with the open-source [Obico](https://github.com/TheSpaghettiDetective/obico-server)
