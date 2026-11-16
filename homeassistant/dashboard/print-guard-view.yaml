@@ -285,19 +285,14 @@ sections:
           type: markdown
           content: |-
             <details><summary><b>What do the sliders mean?</b></summary>
-
-            <ha-icon icon="mdi:alarm-light-outline"></ha-icon> **Alert threshold** – how sure the AI must be over several frames before an alert is sent. Higher = fewer false alarms, but later warning.
-
-            <ha-icon icon="mdi:image-filter-center-focus"></ha-icon> **Frame threshold** – when a *single* frame counts as suspicious.
-
-            <ha-icon icon="mdi:counter"></ha-icon> **Hits needed** – how many of the last 4 frames (≈ 40 s) must be suspicious. Protects against single reflections.
-
-            <ha-icon icon="mdi:timer-sand"></ha-icon> **Cooldown** – minimum time between two alerts.
-
-            <ha-icon icon="mdi:layers-outline"></ha-icon> **Warm-up layers** – the first layers are ignored; first-layer lines often look like spaghetti to the AI.
-
-            <ha-icon icon="mdi:content-cut"></ha-icon> **Cut safety layers** – buffer: the suggested *last good layer* is this many layers below the first detection.
-
-            ---
+            <dl>
+            <dt><ha-icon icon="mdi:alarm-light-outline"></ha-icon> <b>Alert threshold</b></dt><dd>How sure the AI must be over several frames before an alert is sent. Higher = fewer false alarms, but later warning.</dd>
+            <dt><ha-icon icon="mdi:image-filter-center-focus"></ha-icon> <b>Frame threshold</b></dt><dd>When a <i>single</i> frame counts as suspicious.</dd>
+            <dt><ha-icon icon="mdi:counter"></ha-icon> <b>Hits needed</b></dt><dd>How many of the last 4 frames (≈ 40 s) must be suspicious. Protects against single reflections.</dd>
+            <dt><ha-icon icon="mdi:timer-sand"></ha-icon> <b>Cooldown</b></dt><dd>Minimum time between two alerts.</dd>
+            <dt><ha-icon icon="mdi:layers-outline"></ha-icon> <b>Warm-up layers</b></dt><dd>The first layers are ignored – first-layer lines often look like spaghetti to the AI.</dd>
+            <dt><ha-icon icon="mdi:content-cut"></ha-icon> <b>Cut safety layers</b></dt><dd>Buffer: the suggested <i>last good layer</i> is this many layers below the first detection.</dd>
+            </dl>
+            <hr>
             <small>Score = sum of AI confidences per frame · clean print ≈ 0 · obvious spaghetti 1–7.<br>False alarms → raise alert threshold or hits needed · missed failures → lower both.</small>
             </details>

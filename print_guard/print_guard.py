@@ -33,7 +33,7 @@ from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 
 log = logging.getLogger("print-guard")
 
