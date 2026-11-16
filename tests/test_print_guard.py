@@ -164,3 +164,14 @@ def test_cleanup_dir_and_history(tmp_path):
     assert removed == 2
     assert not old.exists() and new.exists()
     assert history.read_text(encoding="utf-8").count("\n") == 1
+
+
+def test_stats_survive_restart(tmp_path):
+    path = str(tmp_path / "stats.json")
+    st = pg.new_stats(now=100)
+    pg.record_frame(st, 0.3, 0.1, 12, scored=True)
+    pg.save_stats(path, "cube.gcode", st, now=200)
+    assert pg.load_stats(path, "cube.gcode", now=300) == st          # same print -> resumed
+    assert pg.load_stats(path, "other.gcode", now=300) is None       # different print
+    assert pg.load_stats(path, "cube.gcode", now=200 + 86401) is None  # too old
+    assert pg.load_stats(str(tmp_path / "missing.json"), "cube.gcode", now=300) is None

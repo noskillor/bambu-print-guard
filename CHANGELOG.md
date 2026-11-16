@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] – 2026-11-16
+
+### Fixed
+- The end-of-print summary no longer starts from zero when the guard restarts during a print:
+  statistics are saved per print (`data/stats.json`) and resumed for the same G-code / task.
+
 ## [1.3.0] – 2026-11-16
 
 ### Added

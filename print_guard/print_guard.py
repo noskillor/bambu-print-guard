@@ -33,7 +33,7 @@ from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 log = logging.getLogger("print-guard")
 
@@ -210,6 +210,26 @@ def summary_payload(stats: dict, status: str, task: str, alert_threshold: float,
     }
 
 
+def save_stats(path: str, job: str, stats: dict, now: float | None = None) -> None:
+    """Persist the running print's statistics atomically (survives guard restarts)."""
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump({"job": job, "saved": now if now is not None else time.time(), "stats": stats}, fh)
+    os.replace(tmp, path)
+
+
+def load_stats(path: str, job: str, now: float, max_age: float = 86400) -> dict | None:
+    """Return saved statistics only for the same print and if not older than max_age."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if not job or data.get("job") != job or now - data.get("saved", 0) > max_age:
+        return None
+    return data.get("stats")
+
+
 def cleanup_dir_and_history(directory: str, history: str, cutoff_ts: float) -> int:
     """Remove files older than cutoff_ts and history lines with an older `time`."""
     removed = 0
@@ -310,6 +330,7 @@ class Guard:
         self.frames_dir = os.path.join(self.www, "frames")
         self.alerts_dir = os.path.join(self.www, "alerts")
         self.history = os.path.join(cfg["data_dir"], "history.jsonl")
+        self.stats_file = os.path.join(cfg["data_dir"], "stats.json")
         for d in (self.frames_dir, self.alerts_dir):
             os.makedirs(d, exist_ok=True)
         self.published_active = None
@@ -328,6 +349,7 @@ class Guard:
         self.tracker = ScoreTracker.from_config(self.cfg)
         self.frames: deque = deque(maxlen=self.cfg["keep_frames"])
         self.stats = new_stats()
+        self.job_key = None
 
     def ensure_gcode(self):
         sensor = self.cfg["gcode_sensor"]
@@ -373,7 +395,19 @@ class Guard:
         t.update(score, layer)
         if t.scoring(layer):
             log.info("layer %s  score=%.2f  ewm=%.2f  hits=%s", layer, score, t.ewm, t.hits_text)
+        if self.job_key is None:
+            # identify the print (G-code file, else task name) and resume its statistics
+            self.job_key = self.gcode_name or self.ha.state(self.cfg["task_sensor"]) or ""
+            restored = load_stats(self.stats_file, self.job_key, time.time())
+            if restored:
+                self.stats = restored
+                log.info("Resumed statistics after restart: %d frames", restored["frames"])
         record_frame(self.stats, score, t.ewm, layer, t.scoring(layer))
+        if self.job_key:
+            try:
+                save_stats(self.stats_file, self.job_key, self.stats)
+            except OSError as exc:
+                log.warning("Statistics not saved: %s", exc)
 
         try:
             self.publish_live(frame_path, detections, layer, score)
@@ -517,6 +551,10 @@ class Guard:
             if self.stats["frames"]:
                 log.info("Print finished (%s)", status)
                 self.send_summary(status)
+                try:
+                    os.remove(self.stats_file)
+                except OSError:
+                    pass
             self.reset_job(None)
             if self.published_active is not False:
                 self.publish_state(False)
