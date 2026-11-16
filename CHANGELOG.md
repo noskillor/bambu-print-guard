@@ -4,9 +4,15 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] – 2026-11-16
+
+### Added
+- `homeassistant/packages/print_guard_tuning.yaml`: tuning sliders, Edit switch with
+  3-minute auto-lock, Undo (6 steps) and Defaults scripts.
 
 ### Changed
+- Example dashboard: sensitivity shown as read-only tiles until *Edit* is tapped in the heading;
+  in edit mode a table explains every slider.
 - Example dashboard redesigned: two columns, AI image while monitoring / normal camera otherwise,
   status tiles, only the matching Pause or Resume button, success/info hints.
 

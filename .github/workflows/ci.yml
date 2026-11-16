@@ -28,7 +28,7 @@ jobs:
       - run: pip install yamllint
       - name: yamllint
         run: |
-          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" docker-compose.yml .github homeassistant/dashboard
+          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" docker-compose.yml .github homeassistant/dashboard homeassistant/packages
       - name: Blueprints (with !input tags)
         run: |
           python - <<'EOF'

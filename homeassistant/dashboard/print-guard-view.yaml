@@ -151,30 +151,149 @@ sections:
           To continue: cut the model at **Z {{ a.gz }} mm** in Bambu Studio / Orca
           (Cut tool), print the upper part and glue it on.
           {% else %}<ha-alert alert-type="success">No failure detected – no alert yet.</ha-alert>{% endif %}
-      # Optional: only if you use the ha_settings helpers
+      # Optional: needs homeassistant/packages/print_guard_tuning.yaml (sliders, edit switch,
+      # undo + defaults scripts). Locked: 6 read-only tiles. "Edit" in the heading unlocks the sliders.
       - type: heading
         heading: Sensitivity
         icon: mdi:tune-variant
         heading_style: subtitle
-      - type: entities
-        show_header_toggle: false
-        state_color: false
+        badges:
+          - type: entity
+            entity: input_boolean.print_guard_tuning_edit
+            name: Edit
+            show_state: true
+            state_content: name
+            show_icon: true
+            icon: mdi:pencil
+            color: amber
+            tap_action: { action: toggle }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state_not: "on" }]
+        grid_options: { columns: 4, rows: 2 }
+        card:
+          type: tile
+          entity: input_number.print_guard_alert_threshold
+          name: Alert threshold
+          icon: mdi:alarm-light-outline
+          vertical: true
+          tap_action: { action: none }
+          icon_tap_action: { action: none }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state_not: "on" }]
+        grid_options: { columns: 4, rows: 2 }
+        card:
+          type: tile
+          entity: input_number.print_guard_frame_threshold
+          name: Frame threshold
+          icon: mdi:image-filter-center-focus
+          vertical: true
+          tap_action: { action: none }
+          icon_tap_action: { action: none }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state_not: "on" }]
+        grid_options: { columns: 4, rows: 2 }
+        card:
+          type: tile
+          entity: input_number.print_guard_hits_needed
+          name: Hits of 4
+          icon: mdi:counter
+          vertical: true
+          tap_action: { action: none }
+          icon_tap_action: { action: none }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state_not: "on" }]
+        grid_options: { columns: 4, rows: 2 }
+        card:
+          type: tile
+          entity: input_number.print_guard_cooldown
+          name: Cooldown
+          icon: mdi:timer-sand
+          vertical: true
+          tap_action: { action: none }
+          icon_tap_action: { action: none }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state_not: "on" }]
+        grid_options: { columns: 4, rows: 2 }
+        card:
+          type: tile
+          entity: input_number.print_guard_warmup_layers
+          name: Warm-up layers
+          icon: mdi:layers-outline
+          vertical: true
+          tap_action: { action: none }
+          icon_tap_action: { action: none }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state_not: "on" }]
+        grid_options: { columns: 4, rows: 2 }
+        card:
+          type: tile
+          entity: input_number.print_guard_safety_layers
+          name: Cut safety
+          icon: mdi:content-cut
+          vertical: true
+          tap_action: { action: none }
+          icon_tap_action: { action: none }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state: "on" }]
         grid_options: { columns: full }
-        entities:
-          - entity: input_number.print_guard_alert_threshold
-            name: Alert threshold
-          - entity: input_number.print_guard_frame_threshold
-            name: Frame threshold
-          - entity: input_number.print_guard_hits_needed
-            name: Hits needed (of 4)
-          - entity: input_number.print_guard_cooldown
-            name: Cooldown
-          - entity: input_number.print_guard_warmup_layers
-            name: Warm-up layers
-          - entity: input_number.print_guard_safety_layers
-            name: Cut safety layers
-      - type: markdown
+        card:
+          type: entities
+          show_header_toggle: false
+          state_color: false
+          entities:
+            - entity: input_number.print_guard_alert_threshold
+              name: Alert threshold
+            - entity: input_number.print_guard_frame_threshold
+              name: Frame threshold
+            - entity: input_number.print_guard_hits_needed
+              name: Hits needed (of 4)
+            - entity: input_number.print_guard_cooldown
+              name: Cooldown
+            - entity: input_number.print_guard_warmup_layers
+              name: Warm-up layers
+            - entity: input_number.print_guard_safety_layers
+              name: Cut safety layers
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state: "on" }]
+        grid_options: { columns: 6 }
+        card:
+          type: tile
+          entity: script.print_guard_tuning_undo
+          name: Undo
+          icon: mdi:undo
+          color: blue
+          hide_state: true
+          tap_action: { action: perform-action, perform_action: script.print_guard_tuning_undo }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state: "on" }]
+        grid_options: { columns: 6 }
+        card:
+          type: tile
+          entity: script.print_guard_tuning_reset
+          name: Defaults
+          icon: mdi:restore
+          color: grey
+          hide_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.print_guard_tuning_reset
+            confirmation: { text: "Reset all sliders to the defaults? (Undo can revert it)" }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_boolean.print_guard_tuning_edit, state: "on" }]
         grid_options: { columns: full }
-        content: >-
-          <ha-alert alert-type="info">False alarms → raise alert threshold or hits needed.
-          Missed failures → lower both. Changes apply immediately.</ha-alert>
+        card:
+          type: markdown
+          content: |-
+            #### What the sliders mean
+            The AI gives every camera frame a **score** (sum of its confidences). Clean print ≈ **0**, obvious spaghetti **1–7**.
+
+            | | |
+            |:--|:--|
+            | 🚨 **Alert threshold** | *Smoothed* score (average over the last frames) at which an alert is sent. Higher = fewer false alarms, but later warning. *Default 0.4* |
+            | 🔍 **Frame threshold** | Score at which a *single* frame counts as suspicious. *Default 0.25* |
+            | 🔢 **Hits needed (of 4)** | How many of the last 4 frames (≈ 40 s) must be suspicious. Protects against single reflections. *Default 3* |
+            | ⏳ **Cooldown** | Minimum time between two alerts. *Default 15 min* |
+            | 🧱 **Warm-up layers** | The first layers are not scored – first-layer lines often look like spaghetti to the AI. *Default 3* |
+            | ✂️ **Cut safety layers** | The suggested "last good layer" is this many layers below the first detection – a failure usually starts a little earlier. *Default 5* |
+
+            <ha-alert alert-type="info">False alarms → raise alert threshold or hits needed. Missed failures → lower both. Changes apply immediately; the sliders lock again after 3 minutes without a change.</ha-alert>

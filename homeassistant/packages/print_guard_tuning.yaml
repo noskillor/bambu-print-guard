@@ -1,0 +1,207 @@
+# bambu-print-guard – tuning package (optional)
+#
+# Adds everything for comfortable live tuning in Home Assistant:
+#   * six sliders (input_number) that the guard reads via `ha_settings` in config.json
+#   * "Edit" switch – the dashboard only shows the sliders while it is on,
+#     it switches itself off after 3 minutes without a change (no accidental scrolling)
+#   * "Undo" script – reverts the last slider changes (up to 6 steps)
+#   * "Defaults" script – resets all sliders (undoable as one step)
+#
+# Install: copy to /config/packages/ and enable packages in configuration.yaml:
+#   homeassistant:
+#     packages: !include_dir_named packages
+# then restart Home Assistant. Defaults below – change them in the `defaults` maps
+# of the reset script if you want other factory values.
+
+input_number:
+  print_guard_alert_threshold:
+    name: Print Guard alert threshold
+    min: 0.2
+    max: 1.5
+    step: 0.05
+    icon: mdi:alarm-light-outline
+  print_guard_frame_threshold:
+    name: Print Guard frame threshold
+    min: 0.1
+    max: 1.0
+    step: 0.05
+    icon: mdi:image-filter-center-focus
+  print_guard_hits_needed:
+    name: Print Guard hits needed
+    min: 1
+    max: 4
+    step: 1
+    icon: mdi:counter
+  print_guard_cooldown:
+    name: Print Guard cooldown
+    min: 5
+    max: 60
+    step: 5
+    unit_of_measurement: min
+    icon: mdi:timer-sand
+  print_guard_warmup_layers:
+    name: Print Guard warm-up layers
+    min: 0
+    max: 20
+    step: 1
+    icon: mdi:layers-outline
+  print_guard_safety_layers:
+    name: Print Guard cut safety layers
+    min: 0
+    max: 20
+    step: 1
+    icon: mdi:content-cut
+
+input_text:
+  print_guard_tuning_history:
+    name: Print Guard tuning history
+    max: 255
+    icon: mdi:history
+
+input_boolean:
+  print_guard_tuning_edit:
+    name: Print Guard edit sliders
+    initial: false
+    icon: mdi:pencil-lock-outline
+
+script:
+  print_guard_tuning_undo:
+    alias: Print Guard – undo last tuning change
+    icon: mdi:undo
+    mode: single
+    variables:
+      entities: &pg_entities
+        a: input_number.print_guard_alert_threshold
+        b: input_number.print_guard_frame_threshold
+        t: input_number.print_guard_hits_needed
+        p: input_number.print_guard_cooldown
+        s: input_number.print_guard_warmup_layers
+        x: input_number.print_guard_safety_layers
+      stack: "{{ states('input_text.print_guard_tuning_history') | from_json(default=[]) }}"
+    sequence:
+      - condition: template
+        value_template: "{{ stack | length > 0 }}"
+      - variables:
+          last: "{{ stack[-1] }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.print_guard_tuning_history
+        data:
+          value: "{{ stack[:-1] | to_json }}"
+      - repeat:
+          for_each: "{{ last | dictsort | list }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: "{{ entities[repeat.item[0]] }}"
+              data:
+                value: "{{ repeat.item[1] }}"
+      # while this script runs, the history automation ignores the changes
+      - delay:
+          seconds: 1
+
+  print_guard_tuning_reset:
+    alias: Print Guard – reset tuning to defaults
+    icon: mdi:restore
+    mode: single
+    variables:
+      entities: *pg_entities
+      defaults:
+        a: 0.4
+        b: 0.25
+        t: 3
+        p: 15
+        s: 3
+        x: 5
+      changed: "{% set ns = namespace(d={}) %}{% for k, e in entities.items() %}{% set cur = states(e) | float(0) %}{% if cur != defaults[k] | float %}{% set ns.d = dict(ns.d, **{k: cur}) %}{% endif %}{% endfor %}{{ ns.d }}"
+    sequence:
+      - condition: template
+        value_template: "{{ changed | length > 0 }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.print_guard_tuning_history
+        data:
+          value: "{% set ns = namespace(out=((states('input_text.print_guard_tuning_history') | from_json(default=[])) + [changed])[-6:]) %}{% for i in range(6) %}{% if (ns.out | to_json | length) > 250 %}{% set ns.out = ns.out[1:] %}{% endif %}{% endfor %}{{ ns.out | to_json }}"
+      - repeat:
+          for_each: "{{ changed.keys() | list }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: "{{ entities[repeat.item] }}"
+              data:
+                value: "{{ defaults[repeat.item] }}"
+      - delay:
+          seconds: 1
+
+automation:
+  - id: print_guard_tuning_history
+    alias: Print Guard – remember tuning changes
+    description: Stores the previous slider value (up to 6 steps) so the undo script can revert it.
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: state
+        entity_id:
+          - input_number.print_guard_alert_threshold
+          - input_number.print_guard_frame_threshold
+          - input_number.print_guard_hits_needed
+          - input_number.print_guard_cooldown
+          - input_number.print_guard_warmup_layers
+          - input_number.print_guard_safety_layers
+        not_from: [unknown, unavailable]
+        not_to: [unknown, unavailable]
+    conditions:
+      - condition: state
+        entity_id: script.print_guard_tuning_undo
+        state: "off"
+      - condition: state
+        entity_id: script.print_guard_tuning_reset
+        state: "off"
+    actions:
+      - variables:
+          keys:
+            input_number.print_guard_alert_threshold: a
+            input_number.print_guard_frame_threshold: b
+            input_number.print_guard_hits_needed: t
+            input_number.print_guard_cooldown: p
+            input_number.print_guard_warmup_layers: s
+            input_number.print_guard_safety_layers: x
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.print_guard_tuning_history
+        data:
+          value: "{% set entry = {keys[trigger.entity_id]: trigger.from_state.state | float} %}{% set ns = namespace(out=((states('input_text.print_guard_tuning_history') | from_json(default=[])) + [entry])[-6:]) %}{% for i in range(6) %}{% if (ns.out | to_json | length) > 250 %}{% set ns.out = ns.out[1:] %}{% endif %}{% endfor %}{{ ns.out | to_json }}"
+
+  - id: print_guard_tuning_edit_timeout
+    alias: Print Guard – lock sliders after 3 minutes
+    description: Switches the edit switch off after 3 minutes without a slider change.
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.print_guard_tuning_edit
+        to: "on"
+        for:
+          minutes: 3
+      - trigger: state
+        entity_id:
+          - input_number.print_guard_alert_threshold
+          - input_number.print_guard_frame_threshold
+          - input_number.print_guard_hits_needed
+          - input_number.print_guard_cooldown
+          - input_number.print_guard_warmup_layers
+          - input_number.print_guard_safety_layers
+        id: changed
+    conditions:
+      - condition: state
+        entity_id: input_boolean.print_guard_tuning_edit
+        state: "on"
+    actions:
+      - if:
+          - condition: trigger
+            id: changed
+        then:
+          - delay:
+              minutes: 3
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.print_guard_tuning_edit
