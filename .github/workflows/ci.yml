@@ -6,6 +6,23 @@ on:
   pull_request:
 
 jobs:
+  no-third-party-code:
+    # Obico (AGPL-3.0) is built from its own repository at install time and must
+    # never be committed here – neither source code nor model weights.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject Obico code and model files
+        run: |
+          bad=$(git ls-files | grep -Ei '(^|/)(ml_api|obico[^/]*)/|\.(onnx|weights|darknet|rknn|pt|pth|tflite)$' || true)
+          hits=$(git grep -lIE 'The Spaghetti Detective, Inc\.|Copyright .*Obico|from lib\.detection_model import' -- . ':!README*' ':!CONTRIBUTING.md' ':!.github/workflows/ci.yml' || true)
+          if [ -n "$bad$hits" ]; then
+            echo "::error::Obico code or model files must not be added to this repository (see CONTRIBUTING.md):"
+            printf '%s\n' $bad $hits
+            exit 1
+          fi
+          echo "ok – no third-party Obico code or model files"
+
   test:
     runs-on: ubuntu-latest
     strategy:

@@ -15,4 +15,7 @@ Issues and pull requests are welcome – especially reports from printers other 
   pytest
   ```
 - **Never** add Obico source code or model files to this repository – see the README
-  section *Credits & licenses*.
+  section *Credits & licenses*. Obico is licensed separately (AGPL-3.0) and is built from
+  its own repository at install time; changes to Obico belong in
+  [Obico's repository](https://github.com/TheSpaghettiDetective/obico-server). The CI job
+  `no-third-party-code` rejects pull requests that add Obico code or model files.
