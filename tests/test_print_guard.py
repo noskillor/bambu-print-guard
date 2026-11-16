@@ -88,6 +88,42 @@ def test_cooldown_blocks_repeated_alerts():
     assert t.should_alert(now=10_000 + 900)
 
 
+def test_convert_setting():
+    assert pg.convert_setting("0.45", {}) == 0.45
+    assert pg.convert_setting("15.0", {"factor": 60, "int": True}) == 900
+    assert pg.convert_setting("3.0", {"int": True}) == 3
+    assert pg.convert_setting("unavailable", {}) is None
+    assert pg.convert_setting(None, {}) is None
+
+
+class FakeHA:
+    def __init__(self, states):
+        self.states = states
+
+    def state(self, entity_id, quiet=False):
+        return self.states.get(entity_id)
+
+
+def test_apply_ha_settings_updates_config_and_tracker(tmp_path):
+    cfg = dict(pg.DEFAULTS)
+    cfg["data_dir"] = str(tmp_path)
+    cfg["ha_settings"] = {
+        "ewm_alert": {"entity": "input_number.alert"},
+        "cooldown_s": {"entity": "input_number.cooldown", "factor": 60, "int": True},
+        "hits_needed": {"entity": "input_number.hits", "int": True},
+        "keep_frames": {"entity": "input_number.not_tunable"},
+    }
+    ha = FakeHA({"input_number.alert": "0.6", "input_number.cooldown": "20.0",
+                 "input_number.hits": "unavailable", "input_number.not_tunable": "5"})
+    guard = pg.Guard(cfg, ha)
+    changed = guard.apply_ha_settings()
+    assert changed == {"ewm_alert": 0.6, "cooldown_s": 1200}
+    assert guard.tracker.ewm_alert == 0.6 and guard.tracker.cooldown_s == 1200
+    assert guard.cfg["hits_needed"] == 3          # unavailable helper keeps the old value
+    assert guard.cfg["keep_frames"] == 30         # not tunable at runtime
+    assert guard.apply_ha_settings() == {}        # nothing changes on the second read
+
+
 def test_last_good_layer():
     assert pg.last_good_layer(100, 5) == 95
     assert pg.last_good_layer(3, 5) == 1

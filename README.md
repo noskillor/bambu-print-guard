@@ -106,6 +106,7 @@ integrations (Downloader, Local File, Generic Camera), two blueprints and the da
 Defaults: a frame counts as suspicious at score ≥ 0.25, an alert needs a smoothed score
 ≥ 0.40 **and** 3 of the last 4 frames suspicious, at most one alert per 15 minutes,
 the first 3 layers are ignored. Watch the score graph during a few prints and adjust –
+either in `config.json` or **live with sliders in Home Assistant** (`ha_settings`, no restart) –
 see [docs/configuration.md](docs/configuration.md#tuning).
 
 ## Troubleshooting

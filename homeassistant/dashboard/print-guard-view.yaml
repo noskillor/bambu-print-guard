@@ -35,6 +35,23 @@ sections:
           - entity: sensor.print_guard_score
             name: AI score
         grid_options: { columns: full }
+      - type: entities                         # optional: only with the ha_settings helpers
+        title: Sensitivity
+        show_header_toggle: false
+        grid_options: { columns: full }
+        entities:
+          - entity: input_number.print_guard_alert_threshold
+            name: Alert threshold
+          - entity: input_number.print_guard_frame_threshold
+            name: Frame threshold
+          - entity: input_number.print_guard_hits_needed
+            name: Hits needed
+          - entity: input_number.print_guard_cooldown
+            name: Cooldown (min)
+          - entity: input_number.print_guard_warmup_layers
+            name: Warm-up layers
+          - entity: input_number.print_guard_safety_layers
+            name: Cut safety layers
   - type: grid
     cards:
       - type: heading

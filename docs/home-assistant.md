@@ -17,6 +17,12 @@ Put it into `config/ha_token` (Docker) or `/opt/print-guard/ha_token` (native), 
 | Name | `Print Guard last alert` → `input_text.print_guard_last_alert` |
 | Max length | **255** |
 
+**Optional – sliders for live tuning:** create six *Number* helpers
+(`print_guard_alert_threshold`, `print_guard_frame_threshold`, `print_guard_hits_needed`,
+`print_guard_cooldown`, `print_guard_warmup_layers`, `print_guard_safety_layers`) with the
+ranges from [configuration.md → Live tuning](configuration.md#live-tuning-from-home-assistant-ha_settings)
+and keep the `ha_settings` block in `config.json`. Remove the block if you don't want them.
+
 ## 3. Integrations
 
 | Integration | Setting | Result |

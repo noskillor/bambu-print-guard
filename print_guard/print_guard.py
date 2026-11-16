@@ -33,7 +33,7 @@ from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 log = logging.getLogger("print-guard")
 
@@ -74,7 +74,24 @@ DEFAULTS: dict = {
     "min_layer": 3,
     "safety_layers": 5,
     "keep_frames": 30,
+    # Optional: read tuning values live from Home Assistant helpers, e.g.
+    # {"ewm_alert": {"entity": "input_number.print_guard_alert_threshold"},
+    #  "cooldown_s": {"entity": "input_number.print_guard_cooldown", "factor": 60, "int": true}}
+    "ha_settings": {},
 }
+
+# Settings that may be changed at runtime through ``ha_settings``.
+TUNABLE = ("ewm_alert", "frame_score_min", "hits_needed", "cooldown_s", "min_layer", "safety_layers",
+           "ewm_alpha", "interval_s")
+
+
+def convert_setting(raw, spec: dict):
+    """Convert a Home Assistant state to a setting value; None if not usable."""
+    try:
+        value = float(raw) * spec.get("factor", 1)
+    except (TypeError, ValueError):
+        return None
+    return int(round(value)) if spec.get("int") else value
 
 
 # --------------------------------------------------------------------------- #
@@ -177,13 +194,13 @@ class HomeAssistant:
             content = resp.read()
         return content if raw else (json.loads(content) if content else None)
 
-    def state(self, entity_id: str):
+    def state(self, entity_id: str, quiet: bool = False):
         if not entity_id:
             return None
         try:
             return self._req(f"/api/states/{entity_id}")["state"]
         except Exception as exc:  # noqa: BLE001
-            log.warning("Cannot read %s: %s", entity_id, exc)
+            (log.debug if quiet else log.warning)("Cannot read %s: %s", entity_id, exc)
             return None
 
     def camera(self, entity_id: str) -> bytes:
@@ -387,11 +404,37 @@ class Guard:
         except Exception as exc:  # noqa: BLE001
             log.error("Webhook to Home Assistant failed: %s", exc)
 
+    # -- live settings ------------------------------------------------------
+    def apply_ha_settings(self) -> dict:
+        """Read tuning values from HA helpers; takes effect with the next frame."""
+        changed = {}
+        for key, spec in (self.cfg.get("ha_settings") or {}).items():
+            if key not in TUNABLE:
+                log.warning("ha_settings: %s cannot be changed at runtime", key)
+                continue
+            # quiet: optional helpers that don't exist must not flood the log
+            value = convert_setting(self.ha.state(spec["entity"], quiet=True), spec)
+            if value is None or self.cfg.get(key) == value:
+                continue
+            log.info("Setting from Home Assistant: %s = %s (was %s)", key, value, self.cfg.get(key))
+            self.cfg[key] = value
+            changed[key] = value
+        if changed:
+            t = self.tracker
+            t.ewm_alert = self.cfg["ewm_alert"]
+            t.frame_score_min = self.cfg["frame_score_min"]
+            t.hits_needed = self.cfg["hits_needed"]
+            t.cooldown_s = self.cfg["cooldown_s"]
+            t.min_layer = self.cfg["min_layer"]
+            t.alpha = self.cfg["ewm_alpha"]
+        return changed
+
     # -- main loop ----------------------------------------------------------
     def cycle(self) -> str | None:
         status = self.ha.state(self.cfg["status_sensor"])
         if status in self.cfg["running_states"]:
             self.ensure_gcode()
+            self.apply_ha_settings()
             self.step()
         elif status in self.cfg["finished_states"]:
             if self.gcode_name:

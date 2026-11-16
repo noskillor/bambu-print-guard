@@ -66,7 +66,8 @@ Optional startet der Proxmox-Host den Container nur während eines Drucks:
 `public_url` (Adresse, unter der HA den Guard erreicht, z. B. `http://192.168.1.50:8098`)
 eintragen. Bei deutscher HA-Sprache heißen die Sensoren z. B. `sensor.<drucker>_druckstatus`,
 `sensor.<drucker>_aktuelle_schicht`, `sensor.<drucker>_gesamtzahl_der_schichten`.
-Alle Optionen: [docs/configuration.md](docs/configuration.md).
+Alle Optionen: [docs/configuration.md](docs/configuration.md). Die Schwellen lassen sich
+optional **live per Schieberegler in Home Assistant** einstellen (`ha_settings`, ohne Neustart).
 
 **Home Assistant einrichten:** [docs/home-assistant.md](docs/home-assistant.md) –
 ein Helfer, drei kleine Integrationen, zwei Blueprints, ein Dashboard-Reiter.

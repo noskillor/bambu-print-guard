@@ -27,5 +27,14 @@
   "hits_window": 4,
   "cooldown_s": 900,
   "min_layer": 3,
-  "safety_layers": 5
+  "safety_layers": 5,
+
+  "ha_settings": {
+    "ewm_alert": {"entity": "input_number.print_guard_alert_threshold"},
+    "frame_score_min": {"entity": "input_number.print_guard_frame_threshold"},
+    "hits_needed": {"entity": "input_number.print_guard_hits_needed", "int": true},
+    "cooldown_s": {"entity": "input_number.print_guard_cooldown", "factor": 60, "int": true},
+    "min_layer": {"entity": "input_number.print_guard_warmup_layers", "int": true},
+    "safety_layers": {"entity": "input_number.print_guard_safety_layers", "int": true}
+  }
 }

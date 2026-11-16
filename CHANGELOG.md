@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] – 2026-11-16
+
+### Added
+- `ha_settings`: tune thresholds live from Home Assistant number helpers (read before every
+  frame, no restart). Example helpers, docs and a "Sensitivity" card in the example dashboard.
+
 ## [1.0.0] – 2026-11-16
 
 ### Added

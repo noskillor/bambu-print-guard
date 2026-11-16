@@ -46,6 +46,39 @@ The token comes from the `HA_TOKEN` environment variable or the file in `token_f
 | `safety_layers` | 5 | "last good layer" = first detection minus this |
 | `keep_frames` | 30 | frames kept on disk for later inspection |
 
+### Live tuning from Home Assistant (`ha_settings`)
+
+Instead of editing the file you can map tuning keys to Home Assistant number helpers.
+The guard reads them before every frame – no restart needed, and you can change them
+while the guard is stopped (they apply with the next print).
+
+```json
+"ha_settings": {
+  "ewm_alert":       {"entity": "input_number.print_guard_alert_threshold"},
+  "frame_score_min": {"entity": "input_number.print_guard_frame_threshold"},
+  "hits_needed":     {"entity": "input_number.print_guard_hits_needed", "int": true},
+  "cooldown_s":      {"entity": "input_number.print_guard_cooldown", "factor": 60, "int": true},
+  "min_layer":       {"entity": "input_number.print_guard_warmup_layers", "int": true},
+  "safety_layers":   {"entity": "input_number.print_guard_safety_layers", "int": true}
+}
+```
+
+`factor` multiplies the helper value (minutes → seconds above), `int` rounds it.
+Tunable keys: `ewm_alert`, `frame_score_min`, `hits_needed`, `cooldown_s`, `min_layer`,
+`safety_layers`, `ewm_alpha`, `interval_s`. If a helper is missing or `unavailable`, the
+value from `config.json` stays in effect. Suggested helper ranges:
+
+| Helper | Min | Max | Step |
+|---|---|---|---|
+| alert threshold | 0.2 | 1.5 | 0.05 |
+| frame threshold | 0.1 | 1.0 | 0.05 |
+| hits needed | 1 | 4 (= `hits_window`) | 1 |
+| cooldown (min) | 5 | 60 | 5 |
+| warm-up layers | 0 | 20 | 1 |
+| safety layers | 0 | 20 | 1 |
+
+Don't set an *initial value* on these helpers – Home Assistant would reset them on every restart.
+
 **False alarms?** Raise `ewm_alert` (e.g. 0.6) or `hits_needed`. Typical causes: strong
 reflections, the toolhead in front of the camera, support structures, purge lines.
 **Missed failures?** Lower `frame_score_min` / `ewm_alert`; check the score graph of a failed print.
