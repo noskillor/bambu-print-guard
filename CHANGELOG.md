@@ -13,7 +13,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [1.2.1] – 2026-11-16
 
 ### Changed
-- Example dashboard: slider explanation is now a compact help ("What do the sliders mean?"), expanded by default and collapsible.
+- Example dashboard: slider explanation is now a compact help ("What do the sliders mean?"), expanded by default, collapsible and always visible (not only in edit mode).
 
 ## [1.2.0] – 2026-11-16
 
