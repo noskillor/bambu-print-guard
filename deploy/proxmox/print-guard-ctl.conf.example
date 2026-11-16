@@ -1,5 +1,5 @@
 # /etc/print-guard-ctl.conf  (chmod 600)
-VMID=105
+VMID=200
 HA_URL=http://homeassistant.local:8123
 STATUS_SENSOR=sensor.p1s_print_status
 # File containing a Home Assistant long-lived access token (chmod 600)

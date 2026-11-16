@@ -22,7 +22,7 @@ body:
     id: printer
     attributes:
       label: Printer model and firmware
-      placeholder: P1S, 01.10.00.00, LAN-only + developer mode
+      placeholder: "e.g. P1S, firmware 01.xx.xx.xx, LAN-only + developer mode"
   - type: input
     id: ha
     attributes:

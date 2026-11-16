@@ -9,11 +9,11 @@ Debian 12 or 13 template, unprivileged, **nesting + keyctl** enabled (needed for
 2 cores, 1.5 GB RAM, 10 GB disk, static IP, **Start at boot: off**.
 
 ```bash
-pct create 105 local:vztmpl/debian-13-standard_13.6-1_amd64.tar.zst \
+pct create 200 local:vztmpl/debian-13-standard_13.6-1_amd64.tar.zst \
   --hostname print-guard --cores 2 --memory 1536 --swap 512 --rootfs local-lvm:10 \
   --net0 name=eth0,bridge=vmbr0,ip=192.168.1.60/24,gw=192.168.1.1 \
   --unprivileged 1 --features nesting=1,keyctl=1 --onboot 0
-pct start 105 && pct enter 105
+pct start 200 && pct enter 200
 apt update && apt install -y git
 git clone https://github.com/noskillor/bambu-print-guard.git && cd bambu-print-guard
 bash deploy/lxc/install.sh

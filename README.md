@@ -59,7 +59,7 @@ Home Assistant ──camera snapshot──► print_guard.py ──image──�
 4. On an alert the guard calls a Home Assistant webhook. The included blueprint
    downloads the image and sends the notification.
 
-Measured on an Intel i5-9500 (2 cores): ~0.35 s per image, ~360 MB RAM for the model.
+Measured on an older Intel Core i5 desktop CPU (2 cores assigned): ~0.35 s per image, ~360 MB RAM for the model.
 
 ## Requirements
 

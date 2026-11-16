@@ -44,7 +44,7 @@ Druckern im **LAN-only- / Developer-Modus**.
 4. Bei einem Alarm ruft der Guard einen HA-Webhook auf; das Blueprint lädt das Bild
    und verschickt die Nachricht.
 
-Gemessen auf Intel i5-9500 (2 Kerne): ~0,35 s pro Bild, ~360 MB RAM für das Modell.
+Gemessen auf einer älteren Intel-Core-i5-Desktop-CPU (2 Kerne zugewiesen): ~0,35 s pro Bild, ~360 MB RAM für das Modell.
 
 ## Voraussetzungen
 
