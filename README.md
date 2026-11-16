@@ -12,6 +12,8 @@
 > Home Assistant talks to the printer locally ([ha-bambulab](https://github.com/greghesp/ha-bambulab),
 > local MQTT) – no Bambu cloud involved. Developer mode is required so Home Assistant may send
 > commands such as **Pause / Resume**. Cloud-connected printers are untested.
+> For alerts with image on the go, Home Assistant needs remote access – tested with
+> **Home Assistant Cloud** (Nabu Casa).
 > → [How to enable it](#printer-mode-lan-only--developer-mode)
 
 *Deutsche Anleitung: [README.de.md](README.de.md)* · 📖 **[Wiki](https://github.com/noskillor/bambu-print-guard/wiki)** – step-by-step guides, tuning, FAQ
@@ -63,6 +65,10 @@ Measured on an Intel i5-9500 (2 cores): ~0.35 s per image, ~360 MB RAM for the m
 
 - Home Assistant with the [ha-bambulab](https://github.com/greghesp/ha-bambulab) integration
   (works in LAN-only mode) and the Companion App on your phone
+- **Remote access to Home Assistant** for alerts on the go – e.g. **Home Assistant Cloud
+  (Nabu Casa)**, which this project is tested with. The push itself always arrives, but the
+  **alert image** and the **dashboard** opened by tapping are loaded from your Home Assistant;
+  without remote access they only work at home. The printer stays LAN-only either way.
 - A machine that runs Docker *or* Debian (Proxmox LXC, VM, NAS, mini PC, Raspberry Pi 4/5)
   – about 1 GB free RAM while printing
 - Tested with a **P1S**. Other Bambu printers (X1, P1P, A1) should work as long as

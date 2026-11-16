@@ -9,6 +9,8 @@
 > Home Assistant spricht lokal mit dem Drucker (ha-bambulab, lokales MQTT) – ohne Bambu-Cloud.
 > Der Developer-Modus ist nötig, damit Home Assistant Befehle wie **Pausieren / Fortsetzen**
 > senden darf. Mit Cloud verbundene Drucker sind nicht getestet.
+> Für Alarme mit Bild unterwegs braucht Home Assistant Fernzugriff – getestet mit
+> **Home Assistant Cloud** (Nabu Casa).
 
 *English: [README.md](README.md)* · 📖 **[Wiki](https://github.com/noskillor/bambu-print-guard/wiki/Deutsch)** – ausführliche Anleitungen, FAQ
 
@@ -48,6 +50,10 @@ Gemessen auf Intel i5-9500 (2 Kerne): ~0,35 s pro Bild, ~360 MB RAM für das Mod
 
 - Home Assistant mit [ha-bambulab](https://github.com/greghesp/ha-bambulab) (auch im
   LAN-only-Modus) und der Companion-App auf dem Handy
+- **Fernzugriff auf Home Assistant** für Alarme unterwegs – z. B. **Home Assistant Cloud
+  (Nabu Casa)**, damit ist das Projekt getestet. Die Push-Nachricht kommt immer an, aber
+  **Alarmbild** und **Dashboard** beim Antippen lädt das Handy aus deinem Home Assistant – ohne
+  Fernzugriff klappt das nur zu Hause. Der Drucker bleibt in jedem Fall LAN-only.
 - Ein Rechner mit Docker *oder* Debian (Proxmox-LXC, VM, NAS, Mini-PC, Raspberry Pi 4/5),
   ca. 1 GB freier RAM während des Drucks
 - Getestet mit **P1S**; andere Bambu-Drucker sollten gehen, solange HA eine Kamera-Entität
