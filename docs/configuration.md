@@ -18,7 +18,8 @@ The token comes from the `HA_TOKEN` environment variable or the file in `token_f
 | `gcode_sensor` | *(empty = off)* | sensor with the cached G-code file name, enables exact Z heights |
 | `gcode_url_path` | `/local/media/ha-bambulab/YOUR_PRINTER_SERIAL/prints/` | where HA serves the cached G-code |
 | `webhook_id` | `print_guard_alert` | webhook of the alert blueprint |
-| `score_entity` | `sensor.print_guard_score` | sensor the guard publishes (empty = off) |
+| `score_webhook_id` | `print_guard_score` | webhook of the score template sensor (package `print_guard_core.yaml`; empty = off) |
+| `summary_webhook_id` | `print_guard_summary` | webhook for the end-of-print summary (blueprint; empty = off) |
 | `running_states` | `["running"]` | states in which frames are analysed |
 | `finished_states` | `["finish","failed","idle"]` | states that reset the job |
 
@@ -45,6 +46,7 @@ The token comes from the `HA_TOKEN` environment variable or the file in `token_f
 | `min_layer` | 3 | layers below this are not scored (first layer lines look like spaghetti) |
 | `safety_layers` | 5 | "last good layer" = first detection minus this |
 | `keep_frames` | 30 | frames kept on disk for later inspection |
+| `retention_days` | 30 | alert images and history entries older than this are deleted daily (0 = keep forever) |
 
 ### Live tuning from Home Assistant (`ha_settings`)
 

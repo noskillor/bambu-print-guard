@@ -151,6 +151,43 @@ sections:
           To continue: cut the model at **Z {{ a.gz }} mm** in Bambu Studio / Orca
           (Cut tool), print the upper part and glue it on.
           {% else %}<ha-alert alert-type="success">No failure detected – no alert yet.</ha-alert>{% endif %}
+      # Feedback (core package + feedback blueprint): shown when an alert exists
+      - type: conditional
+        conditions: [{ condition: state, entity: input_text.print_guard_last_alert, state_not: "" }]
+        grid_options: { columns: 6 }
+        card:
+          type: tile
+          entity: script.print_guard_feedback_false_alarm
+          name: Was a false alarm
+          icon: mdi:alarm-light-off-outline
+          color: grey
+          hide_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.print_guard_feedback_false_alarm
+            confirmation: { text: "Count the last alert as a false alarm?" }
+      - type: conditional
+        conditions: [{ condition: state, entity: input_text.print_guard_last_alert, state_not: "" }]
+        grid_options: { columns: 6 }
+        card:
+          type: tile
+          entity: script.print_guard_feedback_real_failure
+          name: Was a real failure
+          icon: mdi:check-decagram-outline
+          color: red
+          hide_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.print_guard_feedback_real_failure
+            confirmation: { text: "Count the last alert as a real failure?" }
+      - type: tile
+        entity: counter.print_guard_false_alarms
+        name: False alarms
+        grid_options: { columns: 6 }
+      - type: tile
+        entity: counter.print_guard_real_failures
+        name: Real failures
+        grid_options: { columns: 6 }
       # Optional: needs homeassistant/packages/print_guard_tuning.yaml (sliders, edit switch,
       # undo + defaults scripts). Locked: 6 read-only tiles. "Edit" in the heading unlocks the sliders.
       # The help below is always visible.

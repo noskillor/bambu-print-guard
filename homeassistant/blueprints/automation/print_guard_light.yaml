@@ -1,0 +1,49 @@
+blueprint:
+  name: Print Guard – chamber light on while printing
+  description: >
+    Turns the chamber light on when a print is being prepared or running. The AI needs a
+    well-lit camera image – in a dark chamber it misses failures. The light is not turned
+    off afterwards (timelapses and your own habits stay untouched).
+  domain: automation
+  source_url: https://github.com/noskillor/bambu-print-guard/blob/main/homeassistant/blueprints/automation/print_guard_light.yaml
+  input:
+    status_sensor:
+      name: Printer status sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    light:
+      name: Chamber light
+      selector:
+        entity:
+          filter:
+            - domain: light
+    states:
+      name: States that switch the light on
+      default: [prepare, running]
+      selector:
+        text:
+          multiple: true
+
+mode: single
+
+triggers:
+  - trigger: state
+    entity_id: !input status_sensor
+    to: !input states
+  - trigger: homeassistant
+    event: start
+
+conditions:
+  - condition: state
+    entity_id: !input status_sensor
+    state: !input states
+  - condition: state
+    entity_id: !input light
+    state: "off"
+
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: !input light

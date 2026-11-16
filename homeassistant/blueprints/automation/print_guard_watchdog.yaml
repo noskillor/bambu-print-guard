@@ -1,0 +1,98 @@
+blueprint:
+  name: Print Guard – watchdog
+  description: >
+    Warns on your phone when the printer is printing but the guard has not reported a
+    score for a few minutes (container not started, crashed, network problem) – so you
+    never rely on a monitor that is not running. Reports again when it recovers.
+    Needs sensor.print_guard_score from the core package.
+  domain: automation
+  source_url: https://github.com/noskillor/bambu-print-guard/blob/main/homeassistant/blueprints/automation/print_guard_watchdog.yaml
+  input:
+    status_sensor:
+      name: Printer status sensor
+      description: Reports `running` while printing (ha-bambulab print status).
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    score_sensor:
+      name: Score sensor
+      default: sensor.print_guard_score
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    notify_device:
+      name: Phone
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    grace_seconds:
+      name: Start-up grace period
+      description: Time after the print starts before the watchdog checks (container boot).
+      default: 240
+      selector:
+        number: { min: 60, max: 900, step: 30, unit_of_measurement: s }
+    stale_seconds:
+      name: Silence before warning
+      default: 150
+      selector:
+        number: { min: 60, max: 900, step: 30, unit_of_measurement: s }
+    click_url:
+      name: Open on tap
+      default: /lovelace/print-guard
+      selector:
+        text:
+
+mode: single
+
+variables:
+  status_sensor: !input status_sensor
+  score_sensor: !input score_sensor
+
+triggers:
+  - trigger: template
+    value_template: >-
+      {% set s = state_attr(score_sensor, 'updated') %}
+      {{ is_state(status_sensor, 'running')
+         and (now() - states[status_sensor].last_changed).total_seconds() > grace
+         and (s is none or (now() - as_datetime(s)).total_seconds() > stale) }}
+
+trigger_variables:
+  grace: !input grace_seconds
+  stale: !input stale_seconds
+  status_sensor: !input status_sensor
+  score_sensor: !input score_sensor
+
+actions:
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "⚠️ Print Guard is not running"
+    message: >-
+      The printer is printing, but the AI guard has not reported for a few minutes.
+      Failures are NOT detected right now – check the guard container.
+    data:
+      tag: print-guard-watchdog
+      sticky: "true"
+      channel: Print Guard
+      importance: high
+      priority: high
+      clickAction: !input click_url
+      url: !input click_url
+  - wait_template: >-
+      {% set s = state_attr(score_sensor, 'updated') %}
+      {{ not is_state(status_sensor, 'running')
+         or (s is not none and (now() - as_datetime(s)).total_seconds() < 60) }}
+    timeout:
+      hours: 12
+    continue_on_timeout: false
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "✅ Print Guard is running again"
+    message: "{{ 'Scores are coming in again.' if is_state(status_sensor, 'running') else 'The print is no longer active.' }}"
+    data:
+      tag: print-guard-watchdog
+      channel: Print Guard

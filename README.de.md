@@ -18,6 +18,13 @@ abgelöste Teile und Klumpen mit dem Open-Source-Modell von
 Alles läuft lokal: keine Cloud, kein Abo, keine Grafikkarte nötig. Funktioniert mit
 Druckern im **LAN-only- / Developer-Modus**.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/dashboard-status.png" width="380" alt="Status tiles, pause button and AI score history">
+  <img src="docs/images/dashboard-sensitivity.png" width="380" alt="Last alert, feedback counters, sensitivity and help">
+</p>
+
 ## Funktionsweise
 
 1. Solange der Drucker `running` meldet, holt der Guard alle 10 s ein Kamerabild aus HA.
@@ -71,6 +78,16 @@ optional **live per Schieberegler in Home Assistant** einstellen (`ha_settings`,
 
 **Home Assistant einrichten:** [docs/home-assistant.md](docs/home-assistant.md) –
 ein Helfer, drei kleine Integrationen, zwei Blueprints, ein Dashboard-Reiter.
+
+## Extras
+
+- **Wächter** – Warnung, wenn gedruckt wird, der Guard aber schweigt
+- **Zusammenfassung am Druckende** – „fertig, kein Fehler, höchster Score 0,22“
+- **Feedback-Knöpfe** – Alarm als *Fehlalarm* / *echter Fehler* markieren, Zähler zeigen, ob die Schwellen passen
+- **Bauraum-Licht** beim Drucken an, für zuverlässige Erkennung
+- **Automatisches Aufräumen** von Alarmbildern und Verlauf nach 30 Tagen
+- **Mehrere Drucker** – ein Guard pro Drucker: [docs/multiple-printers.md](docs/multiple-printers.md)
+- Für den Token einen **eigenen HA-Benutzer ohne Admin-Rechte** verwenden – der Guard liest nur und nutzt Webhooks.
 
 ## Lizenzen & Danksagung
 

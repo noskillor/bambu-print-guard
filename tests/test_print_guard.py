@@ -128,3 +128,39 @@ def test_last_good_layer():
     assert pg.last_good_layer(100, 5) == 95
     assert pg.last_good_layer(3, 5) == 1
     assert pg.last_good_layer(None, 5) is None
+
+
+def test_stats_and_summary():
+    st = pg.new_stats(now=1000)
+    pg.record_frame(st, 0.1, 0.03, 2, scored=False)    # warm-up frame: counted, not scored
+    pg.record_frame(st, 0.5, 0.15, 10, scored=True)
+    pg.record_frame(st, 0.2, 0.17, 11, scored=True)
+    st["alerts"] = 1
+    p = pg.summary_payload(st, "finish", "cube", 0.4, now=1000 + 30 * 60)
+    assert p["frames"] == 3 and p["minutes"] == 30
+    assert p["max_score"] == 0.5 and p["max_smoothed"] == 0.17
+    assert p["alerts"] == 1 and p["last_layer"] == 11 and p["status"] == "finish"
+
+
+def test_summary_needs_frames():
+    assert pg.summary_payload(pg.new_stats(now=0), "finish", "", 0.4, now=60) is None
+
+
+def test_cleanup_dir_and_history(tmp_path):
+    import json
+    import os
+
+    alerts = tmp_path / "alerts"
+    alerts.mkdir()
+    old, new = alerts / "old.jpg", alerts / "new.jpg"
+    old.write_bytes(b"x")
+    new.write_bytes(b"x")
+    os.utime(old, (1_000, 1_000))
+    os.utime(new, (2_000_000_000, 2_000_000_000))
+    history = tmp_path / "history.jsonl"
+    history.write_text(json.dumps({"time": "2001-01-01T00:00:00"}) + "\n"
+                       + json.dumps({"time": "2030-01-01T00:00:00"}) + "\n", encoding="utf-8")
+    removed = pg.cleanup_dir_and_history(str(alerts), str(history), cutoff_ts=1_500_000_000)
+    assert removed == 2
+    assert not old.exists() and new.exists()
+    assert history.read_text(encoding="utf-8").count("\n") == 1

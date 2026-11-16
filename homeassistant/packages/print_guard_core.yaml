@@ -1,0 +1,84 @@
+# bambu-print-guard – core package (recommended)
+#
+# Everything Home Assistant needs on its side that is not device-specific:
+#   * sensor.print_guard_score – fed by the guard via webhook (no admin token needed)
+#   * counters for "false alarm" / "real failure" feedback + two scripts for the dashboard
+#   * switch to enable/disable the end-of-print summary
+#   * daily cleanup of alert images older than 30 days in /media/print-guard
+#
+# Install: copy to /config/packages/ and enable packages once in configuration.yaml:
+#   homeassistant:
+#     packages: !include_dir_named packages
+# then restart Home Assistant (shell_command needs a restart, the rest reloads).
+# Device-specific automations (notifications, watchdog, light) come as blueprints.
+
+template:
+  - triggers:
+      - trigger: webhook
+        webhook_id: print_guard_score          # = score_webhook_id in config.json
+        allowed_methods: [POST]
+        local_only: true
+    sensor:
+      - name: Print Guard score
+        unique_id: print_guard_score
+        icon: mdi:brain
+        state_class: measurement
+        state: "{{ trigger.json.score | float(0) }}"
+        attributes:
+          active: "{{ trigger.json.active | default(false) }}"
+          smoothed: "{{ trigger.json.smoothed | default(0) }}"
+          hits: "{{ trigger.json.hits | default('') }}"
+          layer: "{{ trigger.json.layer | default(none) }}"
+          boxes: "{{ trigger.json.boxes | default(0) }}"
+          alert_threshold: "{{ trigger.json.alert_threshold | default(none) }}"
+          updated: "{{ now().isoformat() }}"
+
+counter:
+  print_guard_false_alarms:
+    name: Print Guard false alarms
+    icon: mdi:alarm-light-off-outline
+    restore: true
+  print_guard_real_failures:
+    name: Print Guard real failures
+    icon: mdi:check-decagram-outline
+    restore: true
+
+input_boolean:
+  print_guard_send_summary:
+    name: Print Guard send summary
+    icon: mdi:clipboard-text-outline
+
+script:
+  print_guard_feedback_false_alarm:
+    alias: Print Guard – last alert was a false alarm
+    icon: mdi:alarm-light-off-outline
+    sequence:
+      - event: print_guard_feedback
+        event_data: { kind: false_alarm }
+  print_guard_feedback_real_failure:
+    alias: Print Guard – last alert was a real failure
+    icon: mdi:check-decagram-outline
+    sequence:
+      - event: print_guard_feedback
+        event_data: { kind: real_failure }
+
+shell_command:
+  # keeps the image the alert camera currently shows
+  print_guard_delete_old_images: >-
+    find /media/print-guard -type f -name "*.jpg" -mtime +{{ days | default(30) | int }}
+    ! -name "{{ (state_attr('camera.print_guard_alert', 'file_path') or 'none').split('/')[-1] }}"
+    -print -delete
+
+automation:
+  - id: print_guard_delete_old_images
+    alias: Print Guard – delete old alert images
+    description: Deletes alert images older than 30 days from /media/print-guard (the current one is kept).
+    mode: single
+    triggers:
+      - trigger: time
+        at: "04:15:00"
+    actions:
+      - action: shell_command.print_guard_delete_old_images
+        data:
+          days: 30
+        continue_on_error: true

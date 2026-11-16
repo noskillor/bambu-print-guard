@@ -3,9 +3,15 @@
 You need: the [ha-bambulab](https://github.com/greghesp/ha-bambulab) integration and the
 Home Assistant Companion App on your phone.
 
-## 1. Long-lived access token
+## 1. Long-lived access token (non-admin user recommended)
 
-Profile (bottom left) → **Security** → *Long-lived access tokens* → **Create token**.
+The guard only **reads** states and the camera and talks to Home Assistant through webhooks,
+so it does not need admin rights. Create a dedicated user and use its token:
+
+1. *Settings → People → Users → Add user*, e.g. `print-guard`, **Administrator off**
+   (you may disable "Can only log in from the local network" if the guard runs elsewhere).
+2. Log in once as that user (private browser window), Profile → **Security** →
+   *Long-lived access tokens* → **Create token**.
 Put it into `config/ha_token` (Docker) or `/opt/print-guard/ha_token` (native), `chmod 600`.
 
 ## 2. Helper
@@ -31,6 +37,13 @@ and restart. It adds six sliders (read by the guard through the `ha_settings` bl
 without a change, an **Undo** script (last 6 changes) and a **Defaults** script. The example
 dashboard shows the sliders only while *Edit* is on – no accidental changes while scrolling
 on a phone. Without the package, remove the `ha_settings` block from `config.json`.
+
+## 2b. Core package (recommended)
+
+Copy [`homeassistant/packages/print_guard_core.yaml`](../homeassistant/packages/print_guard_core.yaml)
+to `/config/packages/` (same `packages:` line as above) and restart. It provides
+`sensor.print_guard_score` (fed by webhook), the false-alarm / real-failure counters and
+scripts, the summary switch and a daily cleanup of alert images older than 30 days.
 
 ## 3. Integrations
 
@@ -71,6 +84,15 @@ Blueprints → Import blueprint* with the GitHub URL), then create one automatio
 | Task name sensor | `sensor.<printer>_task_name` (`…_name_der_aufgabe`) |
 
 Entity names differ by printer name and language – pick them from the dropdowns.
+
+**More blueprints (all optional, import the same way):**
+
+| Blueprint | What it does |
+|---|---|
+| `print_guard_watchdog.yaml` | Warns when the printer prints but the guard is silent (container down) |
+| `print_guard_summary.yaml` | Quiet end-of-print report: frames analysed, highest score, alerts |
+| `print_guard_feedback.yaml` | "False alarm" / "Real failure" buttons → counters + logbook |
+| `print_guard_light.yaml` | Chamber light on while printing – the AI needs a well-lit image |
 
 ## 5. Dashboard
 

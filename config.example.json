@@ -13,7 +13,8 @@
   "gcode_url_path": "/local/media/ha-bambulab/YOUR_PRINTER_SERIAL/prints/",
 
   "webhook_id": "print_guard_alert",
-  "score_entity": "sensor.print_guard_score",
+  "score_webhook_id": "print_guard_score",
+  "summary_webhook_id": "print_guard_summary",
 
   "ml_api": "http://ml:3333/p/",
   "frame_base_url": "http://guard:8098",
@@ -28,6 +29,7 @@
   "cooldown_s": 900,
   "min_layer": 3,
   "safety_layers": 5,
+  "retention_days": 30,
 
   "ha_settings": {
     "ewm_alert": {"entity": "input_number.print_guard_alert_threshold"},

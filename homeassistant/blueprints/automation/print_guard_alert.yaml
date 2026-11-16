@@ -125,6 +125,10 @@ actions:
       actions:
         - action: PRINT_GUARD_PAUSE
           title: Pause print
+        - action: PRINT_GUARD_FALSE_ALARM
+          title: False alarm
+        - action: PRINT_GUARD_REAL_FAILURE
+          title: Real failure
   - variables:
       log_message: >-
         Possible failure {{ pct }} % at layer {{ d.layer }}/{{ d.total_layers }} ({{ d.task }}).

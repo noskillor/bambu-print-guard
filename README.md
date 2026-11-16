@@ -21,6 +21,15 @@ Companion App:
 Everything runs locally: no cloud, no subscription, no GPU required. It works with
 printers in **LAN-only / Developer mode**.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/dashboard-status.png" width="380" alt="Status tiles, pause button and AI score history">
+  <img src="docs/images/dashboard-sensitivity.png" width="380" alt="Last alert, feedback counters, sensitivity and help">
+</p>
+
+<sub>Example dashboard (German UI) – live AI image, status, score history, feedback counters, sensitivity and help.</sub>
+
 ## How it works
 
 ```
@@ -101,6 +110,16 @@ integrations (Downloader, Local File, Generic Camera), two blueprints and the da
 [![Import alert blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fnoskillor%2Fbambu-print-guard%2Fblob%2Fmain%2Fhomeassistant%2Fblueprints%2Fautomation%2Fprint_guard_alert.yaml)
 [![Import pause/resume blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fnoskillor%2Fbambu-print-guard%2Fblob%2Fmain%2Fhomeassistant%2Fblueprints%2Fautomation%2Fprint_guard_actions.yaml)
 
+## Extras
+
+- **Watchdog** – warns when the printer prints but the guard is silent
+- **End-of-print summary** – "finished, no failure, highest score 0.22"
+- **Feedback buttons** – mark alerts as *false alarm* / *real failure*, counters show whether
+  the thresholds fit
+- **Chamber light** on while printing for reliable detection
+- **Automatic cleanup** of alert images and history after 30 days
+- **Several printers** – one guard per printer: [docs/multiple-printers.md](docs/multiple-printers.md)
+
 ## Tuning
 
 Defaults: a frame counts as suspicious at score ≥ 0.25, an alert needs a smoothed score
@@ -116,8 +135,9 @@ See [docs/troubleshooting.md](docs/troubleshooting.md).
 ## Security notes
 
 - Ports 3333 (model) and 8098 (images) have no authentication – keep them inside your LAN.
-- The Home Assistant token gives full access to your Home Assistant; store it with `chmod 600`
-  and never commit it (`config/` and `ha_token` are git-ignored).
+- Use a **non-admin Home Assistant user** for the token – the guard only reads states and uses
+  webhooks ([docs/home-assistant.md](docs/home-assistant.md#1-long-lived-access-token-non-admin-user-recommended)).
+  Store it with `chmod 600` and never commit it (`config/` and `ha_token` are git-ignored).
 - The webhook is `local_only`, so it only accepts calls from your local network.
 
 ## Credits & licenses

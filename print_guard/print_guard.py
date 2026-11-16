@@ -33,7 +33,7 @@ from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 
 log = logging.getLogger("print-guard")
 
@@ -52,7 +52,10 @@ DEFAULTS: dict = {
     "gcode_sensor": "",
     "gcode_url_path": "/local/media/ha-bambulab/YOUR_PRINTER_SERIAL/prints/",
     "webhook_id": "print_guard_alert",
-    "score_entity": "sensor.print_guard_score",
+    # Score + summary go through webhooks too, so the token needs no admin rights.
+    # The matching template sensor / automations ship in homeassistant/.
+    "score_webhook_id": "print_guard_score",
+    "summary_webhook_id": "print_guard_summary",
     "running_states": ["running"],
     "finished_states": ["finish", "failed", "idle"],
     # --- Detection service ---------------------------------------------------
@@ -74,6 +77,7 @@ DEFAULTS: dict = {
     "min_layer": 3,
     "safety_layers": 5,
     "keep_frames": 30,
+    "retention_days": 30,     # alert images + history older than this are deleted (0 = keep)
     # Optional: read tuning values live from Home Assistant helpers, e.g.
     # {"ewm_alert": {"entity": "input_number.print_guard_alert_threshold"},
     #  "cooldown_s": {"entity": "input_number.print_guard_cooldown", "factor": 60, "int": true}}
@@ -176,6 +180,59 @@ def last_good_layer(first_hit: int | None, safety_layers: int) -> int | None:
     return max(1, first_hit - safety_layers) if first_hit else None
 
 
+def new_stats(now: float | None = None) -> dict:
+    return {"start": now if now is not None else time.time(), "frames": 0, "max_score": 0.0,
+            "max_ewm": 0.0, "alerts": 0, "last_layer": None}
+
+
+def record_frame(stats: dict, score: float, ewm: float, layer: int | None, scored: bool) -> None:
+    stats["frames"] += 1
+    if layer is not None:
+        stats["last_layer"] = layer
+    if scored:
+        stats["max_score"] = max(stats["max_score"], score)
+        stats["max_ewm"] = max(stats["max_ewm"], ewm)
+
+
+def summary_payload(stats: dict, status: str, task: str, alert_threshold: float, now: float) -> dict | None:
+    if not stats["frames"]:
+        return None
+    return {
+        "status": status,
+        "task": task,
+        "frames": stats["frames"],
+        "minutes": round((now - stats["start"]) / 60),
+        "max_score": round(stats["max_score"], 2),
+        "max_smoothed": round(stats["max_ewm"], 2),
+        "alerts": stats["alerts"],
+        "alert_threshold": alert_threshold,
+        "last_layer": stats["last_layer"],
+    }
+
+
+def cleanup_dir_and_history(directory: str, history: str, cutoff_ts: float) -> int:
+    """Remove files older than cutoff_ts and history lines with an older `time`."""
+    removed = 0
+    for name in os.listdir(directory):
+        path = os.path.join(directory, name)
+        try:
+            if os.path.getmtime(path) < cutoff_ts:
+                os.remove(path)
+                removed += 1
+        except OSError:
+            pass
+    if os.path.exists(history):
+        cutoff = datetime.fromtimestamp(cutoff_ts).isoformat(timespec="seconds")
+        with open(history, encoding="utf-8") as fh:
+            lines = fh.readlines()
+        keep = [ln for ln in lines if json.loads(ln).get("time", "") >= cutoff]
+        if len(keep) != len(lines):
+            with open(history, "w", encoding="utf-8") as fh:
+                fh.writelines(keep)
+        removed += len(lines) - len(keep)
+    return removed
+
+
 # --------------------------------------------------------------------------- #
 # Home Assistant client
 # --------------------------------------------------------------------------- #
@@ -208,9 +265,6 @@ class HomeAssistant:
 
     def fetch(self, path: str) -> bytes:
         return self._req(path, raw=True, timeout=60, auth=False)
-
-    def set_state(self, entity_id: str, state, attributes: dict) -> None:
-        self._req(f"/api/states/{entity_id}", data={"state": state, "attributes": attributes})
 
     def webhook(self, webhook_id: str, payload: dict) -> None:
         self._req(f"/api/webhook/{webhook_id}", data=payload, auth=False)
@@ -259,6 +313,7 @@ class Guard:
         for d in (self.frames_dir, self.alerts_dir):
             os.makedirs(d, exist_ok=True)
         self.published_active = None
+        self.last_cleanup = 0.0
         self.reset_job(None)
 
     # -- job state ----------------------------------------------------------
@@ -272,6 +327,7 @@ class Guard:
         self.z_map: dict[int, float] = {}
         self.tracker = ScoreTracker.from_config(self.cfg)
         self.frames: deque = deque(maxlen=self.cfg["keep_frames"])
+        self.stats = new_stats()
 
     def ensure_gcode(self):
         sensor = self.cfg["gcode_sensor"]
@@ -317,6 +373,7 @@ class Guard:
         t.update(score, layer)
         if t.scoring(layer):
             log.info("layer %s  score=%.2f  ewm=%.2f  hits=%s", layer, score, t.ewm, t.hits_text)
+        record_frame(self.stats, score, t.ewm, layer, t.scoring(layer))
 
         try:
             self.publish_live(frame_path, detections, layer, score)
@@ -343,14 +400,13 @@ class Guard:
         self.publish_state(True, score, layer, len(detections))
 
     def publish_state(self, active: bool, score=0.0, layer=None, boxes=0):
-        entity = self.cfg["score_entity"]
-        if not entity:
+        """Feeds the trigger-based template sensor `sensor.print_guard_score` (see package)."""
+        webhook_id = self.cfg["score_webhook_id"]
+        if not webhook_id:
             return
         t = self.tracker
-        self.ha.set_state(entity, round(score, 2), {
-            "friendly_name": "Print Guard score",
-            "icon": "mdi:brain",
-            "state_class": "measurement",
+        self.ha.webhook(webhook_id, {
+            "score": round(score, 2),
             "active": active,
             "smoothed": round(t.ewm, 2),
             "hits": t.hits_text,
@@ -360,9 +416,30 @@ class Guard:
         })
         self.published_active = active
 
+    def send_summary(self, status: str) -> dict | None:
+        """Short report at the end of a print (only if frames were analysed)."""
+        payload = summary_payload(self.stats, status, self.ha.state(self.cfg["task_sensor"]) or "",
+                                  self.tracker.ewm_alert, time.time())
+        if payload is None or not self.cfg["summary_webhook_id"]:
+            return payload
+        log.info("Summary: %s", payload)
+        try:
+            self.ha.webhook(self.cfg["summary_webhook_id"], payload)
+        except Exception as exc:  # noqa: BLE001
+            log.error("Summary webhook failed: %s", exc)
+        return payload
+
+    def cleanup(self, now: float | None = None) -> int:
+        """Delete alert images and history lines older than retention_days."""
+        days = self.cfg["retention_days"]
+        if not days:
+            return 0
+        return cleanup_dir_and_history(self.alerts_dir, self.history, (now or time.time()) - days * 86400)
+
     def alert(self, frame_path, frame_name, detections, layer, score):
         t = self.tracker
         t.last_alert = time.time()
+        self.stats["alerts"] += 1
         total = to_int(self.ha.state(self.cfg["total_layer_sensor"]))
         progress = self.ha.state(self.cfg["progress_sensor"])
         task = self.ha.state(self.cfg["task_sensor"]) or ""
@@ -437,8 +514,9 @@ class Guard:
             self.apply_ha_settings()
             self.step()
         elif status in self.cfg["finished_states"]:
-            if self.gcode_name:
+            if self.stats["frames"]:
                 log.info("Print finished (%s)", status)
+                self.send_summary(status)
             self.reset_job(None)
             if self.published_active is not False:
                 self.publish_state(False)
@@ -447,6 +525,14 @@ class Guard:
     def run(self):
         while True:
             started = time.time()
+            if started - self.last_cleanup > 86400:
+                self.last_cleanup = started
+                try:
+                    removed = self.cleanup(started)
+                    if removed:
+                        log.info("Cleanup: removed %d old alert files/history lines", removed)
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("Cleanup failed: %s", exc)
             try:
                 self.cycle()
             except Exception as exc:  # noqa: BLE001

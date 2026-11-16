@@ -1,0 +1,75 @@
+blueprint:
+  name: Print Guard – end-of-print summary
+  description: >
+    At the end of every print the guard sends a short report (frames analysed, highest
+    score, alerts). This blueprint writes it to the logbook and – if the switch is on –
+    sends a quiet notification, so you know the guard really watched the whole print.
+  domain: automation
+  source_url: https://github.com/noskillor/bambu-print-guard/blob/main/homeassistant/blueprints/automation/print_guard_summary.yaml
+  input:
+    webhook_id:
+      name: Webhook ID
+      description: Must match `summary_webhook_id` in config.json.
+      default: print_guard_summary
+      selector:
+        text:
+    notify_device:
+      name: Phone
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    enable_switch:
+      name: Enable switch
+      default: input_boolean.print_guard_send_summary
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    click_url:
+      name: Open on tap
+      default: /lovelace/print-guard
+      selector:
+        text:
+
+mode: queued
+max: 3
+
+triggers:
+  - trigger: webhook
+    webhook_id: !input webhook_id
+    allowed_methods: [POST]
+    local_only: true
+
+variables:
+  enable_switch: !input enable_switch
+
+actions:
+  - variables:
+      d: "{{ trigger.json }}"
+      ok: "{{ trigger.json.alerts | int(0) == 0 }}"
+      duration: "{% set m = trigger.json.minutes | int(0) %}{{ (m // 60) ~ ' h ' ~ (m % 60) ~ ' min' if m >= 60 else m ~ ' min' }}"
+      result: "{{ {'finish': 'finished', 'failed': 'failed', 'idle': 'ended'}.get(trigger.json.status, trigger.json.status) }}"
+  - action: logbook.log
+    data:
+      name: Print Guard
+      message: >-
+        Summary "{{ d.task }}" ({{ result }}): {{ d.frames }} frames in {{ duration }},
+        highest score {{ d.max_score }}, highest smoothed {{ d.max_smoothed }}
+        (alert at {{ d.alert_threshold }}), {{ d.alerts }} alert(s).
+  - condition: template
+    value_template: "{{ is_state(enable_switch, 'on') }}"
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "{{ '✅' if ok else '⚠️' }} Print {{ result }}: {{ d.task }}"
+    message: >-
+      AI guard: {{ d.frames }} frames in {{ duration }} ·
+      {{ 'no failure detected' if ok else d.alerts ~ ' alert(s)' }} ·
+      highest score {{ d.max_score }} (smoothed {{ d.max_smoothed }}, alert at {{ d.alert_threshold }})
+    data:
+      tag: print-guard-summary
+      channel: Print Guard summary
+      importance: low
+      clickAction: !input click_url
+      url: !input click_url

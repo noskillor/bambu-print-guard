@@ -1,0 +1,109 @@
+blueprint:
+  name: Print Guard – false alarm / real failure feedback
+  description: >
+    Handles the "False alarm" / "Real failure" buttons of the alert notification and the
+    feedback scripts from the core package: counts them, logs the alert together with the
+    current thresholds and confirms in the same notification. After a few weeks the
+    counters tell you whether the thresholds fit your printer.
+  domain: automation
+  source_url: https://github.com/noskillor/bambu-print-guard/blob/main/homeassistant/blueprints/automation/print_guard_feedback.yaml
+  input:
+    notify_device:
+      name: Phone
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    last_alert_helper:
+      name: Last-alert helper
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    false_counter:
+      name: False alarm counter
+      default: counter.print_guard_false_alarms
+      selector:
+        entity:
+          filter:
+            - domain: counter
+    real_counter:
+      name: Real failure counter
+      default: counter.print_guard_real_failures
+      selector:
+        entity:
+          filter:
+            - domain: counter
+    status_sensor:
+      name: Printer status sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    click_url:
+      name: Open on tap
+      default: /lovelace/print-guard
+      selector:
+        text:
+
+mode: queued
+max: 3
+
+triggers:
+  - trigger: event
+    event_type: mobile_app_notification_action
+    event_data: { action: PRINT_GUARD_FALSE_ALARM }
+    id: false_alarm
+  - trigger: event
+    event_type: mobile_app_notification_action
+    event_data: { action: PRINT_GUARD_REAL_FAILURE }
+    id: real_failure
+  - trigger: event
+    event_type: print_guard_feedback
+    event_data: { kind: false_alarm }
+    id: false_alarm
+  - trigger: event
+    event_type: print_guard_feedback
+    event_data: { kind: real_failure }
+    id: real_failure
+
+variables:
+  helper: !input last_alert_helper
+  false_counter: !input false_counter
+  real_counter: !input real_counter
+  status_sensor: !input status_sensor
+  a: "{{ states(helper) | from_json(default={}) }}"
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: false_alarm
+        sequence:
+          - action: counter.increment
+            target:
+              entity_id: !input false_counter
+    default:
+      - action: counter.increment
+        target:
+          entity_id: !input real_counter
+  - action: logbook.log
+    data:
+      name: Print Guard
+      message: >-
+        Feedback: {{ 'false alarm' if trigger.id == 'false_alarm' else 'real failure' }}{% if a %}
+        – alert {{ a.ts }} ({{ a.c }} %, layer {{ a.l }}, image {{ a.img }}){% endif %}.
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "{{ '👍 Saved as false alarm' if trigger.id == 'false_alarm' else '✔️ Saved as real failure' }}"
+    message: >-
+      {{ states(false_counter) }} false alarms · {{ states(real_counter) }} real failures so far.
+    data:
+      image: "{{ '/media/local/' ~ a.dir ~ '/' ~ a.img if a else '' }}"
+      tag: print-guard
+      sticky: "true"
+      channel: Print Guard
+      clickAction: !input click_url
+      url: !input click_url
+      actions: "{{ [{'action': 'PRINT_GUARD_PAUSE', 'title': 'Pause print'}] if is_state(status_sensor, 'running') else [] }}"

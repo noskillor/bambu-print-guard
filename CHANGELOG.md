@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] – 2026-11-16
+
+### Added
+- Watchdog blueprint: warning when the printer prints but the guard is silent.
+- End-of-print summary (`summary_webhook_id`) + summary blueprint.
+- Feedback: "False alarm" / "Real failure" notification buttons, counters, scripts, blueprint.
+- Chamber-light blueprint.
+- `retention_days`: daily cleanup of alert images and history in the guard; daily cleanup of
+  `/media/print-guard` in Home Assistant (core package).
+- `homeassistant/packages/print_guard_core.yaml`.
+- `docs/multiple-printers.md`.
+- Screenshots in the README.
+
+### Changed
+- The score is now sent via webhook (`score_webhook_id`) to a trigger-based template sensor –
+  the guard no longer needs an admin token. **Breaking:** `score_entity` was removed; install
+  the core package to get `sensor.print_guard_score` again.
+
 ## [1.2.2] – 2026-11-16
 
 ### Changed
