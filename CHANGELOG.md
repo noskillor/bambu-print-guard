@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Example dashboard redesigned: two columns, AI image while monitoring / normal camera otherwise,
+  status tiles, only the matching Pause or Resume button, success/info hints.
+
 ## [1.1.0] – 2026-11-16
 
 ### Added

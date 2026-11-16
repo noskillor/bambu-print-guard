@@ -1,6 +1,10 @@
 # Example dashboard view for bambu-print-guard.
 # Dashboard → ⋮ → Edit → ⋮ → Raw configuration editor → paste as an entry under `views:`.
-# Replace the entity IDs marked with "# <-" with your own.
+# Replace the entity IDs marked with "# <-" with your own (printer entities from ha-bambulab).
+#
+# Layout: left = live image (AI view while monitoring, normal camera otherwise), status tiles,
+# pause/resume (only the one that fits the printer state) and score history;
+# right = last alert and sensitivity sliders (optional, see docs/configuration.md).
 title: Print Guard
 path: print-guard
 icon: mdi:printer-3d-nozzle-alert
@@ -10,48 +14,110 @@ sections:
   - type: grid
     cards:
       - type: heading
-        heading: Live – what the AI sees
-        icon: mdi:brain
-      - type: picture-entity
-        entity: camera.print_guard_live          # <- Generic camera (still image http://GUARD:8098/live.jpg)
-        camera_view: auto
-        show_name: false
-        show_state: false
+        heading: Live
+        icon: mdi:printer-3d
+        badges:
+          - type: entity
+            entity: sensor.p1s_print_progress          # <-
+            show_icon: true
+            color: primary
+          - type: entity
+            entity: sensor.p1s_remaining_time          # <-
+            show_icon: true
+      # Normal camera while the guard is not monitoring …
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: sensor.print_guard_score
+            attribute: active
+            state_not: [true, "True", "true"]
         grid_options: { columns: full }
-      - type: markdown
+        card:
+          type: picture-entity
+          entity: camera.p1s_camera                    # <-
+          camera_view: live
+          show_name: false
+          show_state: false
+      # … and the annotated AI image while it is.
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: sensor.print_guard_score
+            attribute: active
+            state: [true, "True", "true"]
         grid_options: { columns: full }
-        content: >-
-          {% set s = 'sensor.print_guard_score' %}
-          {% if state_attr(s, 'active') %}**Monitoring active** · score {{ states(s) }} ·
-          smoothed {{ state_attr(s, 'smoothed') }} (alert at {{ state_attr(s, 'alert_threshold') }}) ·
-          hits {{ state_attr(s, 'hits') }} · layer {{ state_attr(s, 'layer') }} ·
-          updated {{ as_local(states[s].last_updated).strftime('%H:%M:%S') }}
-          {% elif states(s) in ['unknown', 'unavailable'] %}No data from the guard yet.
-          {% else %}**Monitoring off** – starts automatically with the next print.{% endif %}
+        card:
+          type: picture-entity
+          entity: camera.print_guard_live              # <- Generic camera (http://GUARD:8098/live.jpg)
+          camera_view: auto
+          show_name: false
+          show_state: false
+      - type: tile
+        entity: sensor.p1s_print_status                # <-
+        name: Status
+        vertical: true
+        grid_options: { columns: 3, rows: 2 }
+      - type: tile
+        entity: sensor.p1s_current_layer               # <-
+        name: Layer
+        icon: mdi:layers-triple
+        vertical: true
+        grid_options: { columns: 3, rows: 2 }
+      - type: tile
+        entity: sensor.print_guard_score
+        name: AI score
+        vertical: true
+        grid_options: { columns: 3, rows: 2 }
+      - type: tile
+        entity: sensor.print_guard_score
+        name: Smoothed
+        icon: mdi:chart-bell-curve
+        state_content: [smoothed]
+        vertical: true
+        grid_options: { columns: 3, rows: 2 }
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: sensor.p1s_print_status            # <-
+            state: running
+        grid_options: { columns: full }
+        card:
+          type: tile
+          entity: button.p1s_pause_printing            # <-
+          name: Pause print
+          icon: mdi:pause-circle
+          color: amber
+          hide_state: true
+          tap_action:
+            action: perform-action
+            perform_action: button.press
+            target: { entity_id: button.p1s_pause_printing }   # <-
+            confirmation: { text: "Pause the print?" }
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: sensor.p1s_print_status            # <-
+            state: pause
+        grid_options: { columns: full }
+        card:
+          type: tile
+          entity: button.p1s_resume_printing           # <-
+          name: Resume print
+          icon: mdi:play-circle
+          color: green
+          hide_state: true
+          tap_action:
+            action: perform-action
+            perform_action: button.press
+            target: { entity_id: button.p1s_resume_printing }  # <-
       - type: history-graph
-        title: AI score (8 h)
+        title: AI score – last 8 h
         hours_to_show: 8
+        grid_options: { columns: full }
         entities:
           - entity: sensor.print_guard_score
             name: AI score
-        grid_options: { columns: full }
-      - type: entities                         # optional: only with the ha_settings helpers
-        title: Sensitivity
-        show_header_toggle: false
-        grid_options: { columns: full }
-        entities:
-          - entity: input_number.print_guard_alert_threshold
-            name: Alert threshold
-          - entity: input_number.print_guard_frame_threshold
-            name: Frame threshold
-          - entity: input_number.print_guard_hits_needed
-            name: Hits needed
-          - entity: input_number.print_guard_cooldown
-            name: Cooldown (min)
-          - entity: input_number.print_guard_warmup_layers
-            name: Warm-up layers
-          - entity: input_number.print_guard_safety_layers
-            name: Cut safety layers
+
   - type: grid
     cards:
       - type: heading
@@ -60,46 +126,55 @@ sections:
       - type: conditional
         conditions:
           - condition: state
-            entity: input_text.print_guard_last_alert   # <- your helper
+            entity: input_text.print_guard_last_alert  # <- your helper
             state_not: ""
+        grid_options: { columns: full }
         card:
           type: picture-entity
-          entity: camera.print_guard_alert              # <- Local File camera
+          entity: camera.print_guard_alert             # <- Local File camera
           camera_view: auto
           show_name: false
           show_state: false
-        grid_options: { columns: full }
+          tap_action: { action: more-info }
       - type: markdown
         grid_options: { columns: full }
         content: >-
           {% set a = states('input_text.print_guard_last_alert') | from_json(default={}) %}
-          {% if a %}### ⚠️ Possible failure {{ a.c }} % – {{ a.ts }}
+          {% if a %}### ⚠️ Possible failure {{ a.c }} % · {{ a.ts }}
 
           | | Layer | Z height |
-          |---|---|---|
+          |:--|--:|--:|
           | Alert at | {{ a.l }} / {{ a.t }} | |
           | First detected | {{ a.fl }} | {{ a.fz }} mm |
           | ✂️ **Last good** | **{{ a.gl }}** | **{{ a.gz }} mm** |
 
           To continue: cut the model at **Z {{ a.gz }} mm** in Bambu Studio / Orca
           (Cut tool), print the upper part and glue it on.
-          {% else %}No alert stored yet.{% endif %}
-      - type: tile
-        entity: button.p1s_pause_printing     # <- printer pause button
-        name: Pause print
-        icon: mdi:pause
-        tap_action:
-          action: perform-action
-          perform_action: button.press
-          target: { entity_id: button.p1s_pause_printing }
-          confirmation: { text: "Pause the print?" }
-        grid_options: { columns: 6 }
-      - type: tile
-        entity: button.p1s_resume_printing    # <- printer resume button
-        name: Resume
-        icon: mdi:play
-        tap_action:
-          action: perform-action
-          perform_action: button.press
-          target: { entity_id: button.p1s_resume_printing }
-        grid_options: { columns: 6 }
+          {% else %}<ha-alert alert-type="success">No failure detected – no alert yet.</ha-alert>{% endif %}
+      # Optional: only if you use the ha_settings helpers
+      - type: heading
+        heading: Sensitivity
+        icon: mdi:tune-variant
+        heading_style: subtitle
+      - type: entities
+        show_header_toggle: false
+        state_color: false
+        grid_options: { columns: full }
+        entities:
+          - entity: input_number.print_guard_alert_threshold
+            name: Alert threshold
+          - entity: input_number.print_guard_frame_threshold
+            name: Frame threshold
+          - entity: input_number.print_guard_hits_needed
+            name: Hits needed (of 4)
+          - entity: input_number.print_guard_cooldown
+            name: Cooldown
+          - entity: input_number.print_guard_warmup_layers
+            name: Warm-up layers
+          - entity: input_number.print_guard_safety_layers
+            name: Cut safety layers
+      - type: markdown
+        grid_options: { columns: full }
+        content: >-
+          <ha-alert alert-type="info">False alarms → raise alert threshold or hits needed.
+          Missed failures → lower both. Changes apply immediately.</ha-alert>
