@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# The jobs only read the repository – never give the token more than that.
+permissions:
+  contents: read
+
 jobs:
   no-third-party-code:
     # Obico (AGPL-3.0) is built from its own repository at install time and must
