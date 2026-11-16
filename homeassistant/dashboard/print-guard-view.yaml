@@ -284,16 +284,20 @@ sections:
         card:
           type: markdown
           content: |-
-            #### What the sliders mean
-            The AI gives every camera frame a **score** (sum of its confidences). Clean print ≈ **0**, obvious spaghetti **1–7**.
+            <details><summary><b>What do the sliders mean?</b></summary>
 
-            | | |
-            |:--|:--|
-            | 🚨 **Alert threshold** | *Smoothed* score (average over the last frames) at which an alert is sent. Higher = fewer false alarms, but later warning. *Default 0.4* |
-            | 🔍 **Frame threshold** | Score at which a *single* frame counts as suspicious. *Default 0.25* |
-            | 🔢 **Hits needed (of 4)** | How many of the last 4 frames (≈ 40 s) must be suspicious. Protects against single reflections. *Default 3* |
-            | ⏳ **Cooldown** | Minimum time between two alerts. *Default 15 min* |
-            | 🧱 **Warm-up layers** | The first layers are not scored – first-layer lines often look like spaghetti to the AI. *Default 3* |
-            | ✂️ **Cut safety layers** | The suggested "last good layer" is this many layers below the first detection – a failure usually starts a little earlier. *Default 5* |
+            <ha-icon icon="mdi:alarm-light-outline"></ha-icon> **Alert threshold** – how sure the AI must be over several frames before an alert is sent. Higher = fewer false alarms, but later warning.
 
-            <ha-alert alert-type="info">False alarms → raise alert threshold or hits needed. Missed failures → lower both. Changes apply immediately; the sliders lock again after 3 minutes without a change.</ha-alert>
+            <ha-icon icon="mdi:image-filter-center-focus"></ha-icon> **Frame threshold** – when a *single* frame counts as suspicious.
+
+            <ha-icon icon="mdi:counter"></ha-icon> **Hits needed** – how many of the last 4 frames (≈ 40 s) must be suspicious. Protects against single reflections.
+
+            <ha-icon icon="mdi:timer-sand"></ha-icon> **Cooldown** – minimum time between two alerts.
+
+            <ha-icon icon="mdi:layers-outline"></ha-icon> **Warm-up layers** – the first layers are ignored; first-layer lines often look like spaghetti to the AI.
+
+            <ha-icon icon="mdi:content-cut"></ha-icon> **Cut safety layers** – buffer: the suggested *last good layer* is this many layers below the first detection.
+
+            ---
+            <small>Score = sum of AI confidences per frame · clean print ≈ 0 · obvious spaghetti 1–7.<br>False alarms → raise alert threshold or hits needed · missed failures → lower both.</small>
+            </details>
