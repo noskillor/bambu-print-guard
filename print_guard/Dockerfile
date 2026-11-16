@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --assume-yes fonts-dejavu-core \
