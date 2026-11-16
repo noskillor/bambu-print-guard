@@ -7,7 +7,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [1.2.2] – 2026-11-16
 
 ### Changed
-- Example dashboard: slider help uses a definition list, descriptions are indented under each name.
+- Example dashboard: slider help uses a definition list, descriptions are indented under each name,
+  with a blank line between entries.
 
 ## [1.2.1] – 2026-11-16
 

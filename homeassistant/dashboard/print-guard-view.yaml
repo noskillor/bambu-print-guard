@@ -286,11 +286,11 @@ sections:
           content: |-
             <details><summary><b>What do the sliders mean?</b></summary>
             <dl>
-            <dt><ha-icon icon="mdi:alarm-light-outline"></ha-icon> <b>Alert threshold</b></dt><dd>How sure the AI must be over several frames before an alert is sent. Higher = fewer false alarms, but later warning.</dd>
-            <dt><ha-icon icon="mdi:image-filter-center-focus"></ha-icon> <b>Frame threshold</b></dt><dd>When a <i>single</i> frame counts as suspicious.</dd>
-            <dt><ha-icon icon="mdi:counter"></ha-icon> <b>Hits needed</b></dt><dd>How many of the last 4 frames (≈ 40 s) must be suspicious. Protects against single reflections.</dd>
-            <dt><ha-icon icon="mdi:timer-sand"></ha-icon> <b>Cooldown</b></dt><dd>Minimum time between two alerts.</dd>
-            <dt><ha-icon icon="mdi:layers-outline"></ha-icon> <b>Warm-up layers</b></dt><dd>The first layers are ignored – first-layer lines often look like spaghetti to the AI.</dd>
+            <dt><ha-icon icon="mdi:alarm-light-outline"></ha-icon> <b>Alert threshold</b></dt><dd>How sure the AI must be over several frames before an alert is sent. Higher = fewer false alarms, but later warning.</dd><br>
+            <dt><ha-icon icon="mdi:image-filter-center-focus"></ha-icon> <b>Frame threshold</b></dt><dd>When a <i>single</i> frame counts as suspicious.</dd><br>
+            <dt><ha-icon icon="mdi:counter"></ha-icon> <b>Hits needed</b></dt><dd>How many of the last 4 frames (≈ 40 s) must be suspicious. Protects against single reflections.</dd><br>
+            <dt><ha-icon icon="mdi:timer-sand"></ha-icon> <b>Cooldown</b></dt><dd>Minimum time between two alerts.</dd><br>
+            <dt><ha-icon icon="mdi:layers-outline"></ha-icon> <b>Warm-up layers</b></dt><dd>The first layers are ignored – first-layer lines often look like spaghetti to the AI.</dd><br>
             <dt><ha-icon icon="mdi:content-cut"></ha-icon> <b>Cut safety layers</b></dt><dd>Buffer: the suggested <i>last good layer</i> is this many layers below the first detection.</dd>
             </dl>
             <hr>
