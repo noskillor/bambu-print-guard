@@ -4,6 +4,15 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Docker image now based on `python:3.15-slim`, Pillow ≥ 13.0, GitHub Actions updated (Dependabot).
+- CI tests Python 3.11 – 3.15 and runs with a read-only token.
+
+### Added
+- Security policy, code of conduct, pull request template, issue template config, Dependabot config.
+
 ## [1.3.1] – 2026-11-16
 
 ### Fixed
