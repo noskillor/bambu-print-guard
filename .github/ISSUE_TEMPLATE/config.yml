@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Wiki – installation, setup, tuning, troubleshooting
+    url: https://github.com/noskillor/bambu-print-guard/wiki
+    about: Most questions are answered here (see also the FAQ page).
+  - name: 💬 Questions & ideas – Discussions
+    url: https://github.com/noskillor/bambu-print-guard/discussions
+    about: Ask questions, share your printer results and tuning values.
+  - name: 🔒 Security vulnerability
+    url: https://github.com/noskillor/bambu-print-guard/security/advisories/new
+    about: Please report security problems privately, not as a public issue.
