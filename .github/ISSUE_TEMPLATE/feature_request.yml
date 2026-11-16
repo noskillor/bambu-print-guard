@@ -1,0 +1,11 @@
+name: Feature request / printer report
+description: Suggest an improvement or report results with another printer
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea or report
+      description: What would you like, or which printer / settings did you test?
+    validations:
+      required: true

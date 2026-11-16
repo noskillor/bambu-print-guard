@@ -1,0 +1,146 @@
+blueprint:
+  name: Print Guard – failure alert
+  description: >
+    Receives alerts from bambu-print-guard via webhook, stores the annotated image
+    in /media, sends an actionable push notification (image, layer, Z height,
+    "last good layer", Pause button) to a Companion-App phone and writes a logbook entry.
+
+    Requirements: Downloader integration with download directory `/media`,
+    a Local File camera for the alert image, an input_text helper (max 255).
+  domain: automation
+  source_url: https://github.com/noskillor/bambu-print-guard/blob/main/homeassistant/blueprints/automation/print_guard_alert.yaml
+  input:
+    webhook_id:
+      name: Webhook ID
+      description: Must match `webhook_id` in the guard's config.json.
+      default: print_guard_alert
+      selector:
+        text:
+    notify_device:
+      name: Phone
+      description: Home Assistant Companion App device that receives the alert.
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    last_alert_helper:
+      name: Last-alert helper
+      description: input_text (max 255) that stores the last alert for the Pause/Resume blueprint and dashboard.
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    alert_camera:
+      name: Alert image camera
+      description: Local File camera that will show the latest alert image.
+      selector:
+        entity:
+          filter:
+            - domain: camera
+              integration: local_file
+    media_subdir:
+      name: Media sub-folder
+      description: Folder below /media for alert images.
+      default: print-guard
+      selector:
+        text:
+    click_url:
+      name: Open on tap
+      description: Dashboard path opened when the notification is tapped.
+      default: /lovelace/print-guard
+      selector:
+        text:
+    logbook_entity:
+      name: Logbook entity (optional)
+      description: Entity the logbook entry is attached to, e.g. the printer camera.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: camera
+
+mode: queued
+max: 5
+
+triggers:
+  - trigger: webhook
+    webhook_id: !input webhook_id
+    allowed_methods:
+      - POST
+    local_only: true
+
+variables:
+  media_subdir: !input media_subdir
+  logbook_entity: !input logbook_entity
+
+actions:
+  - variables:
+      d: "{{ trigger.json }}"
+      pct: "{{ (trigger.json.confidence * 100) | round(0) | int }}"
+      z_first: "{{ ('%.2f mm' | format(trigger.json.first_z)) if trigger.json.first_z is not none else '?' }}"
+      z_good: "{{ ('%.2f mm' | format(trigger.json.good_z)) if trigger.json.good_z is not none else '?' }}"
+  - action: downloader.download_file
+    data:
+      url: "{{ d.image_url }}"
+      subdir: "{{ media_subdir }}"
+      filename: "{{ d.image_file }}"
+      overwrite: true
+    continue_on_error: true
+  - delay:
+      seconds: 2
+  - action: input_text.set_value
+    target:
+      entity_id: !input last_alert_helper
+    data:
+      value: >-
+        {{ {'c': pct | int, 'l': d.layer, 't': d.total_layers, 'fl': d.first_layer,
+            'fz': d.first_z, 'gl': d.good_layer, 'gz': d.good_z,
+            'img': d.image_file, 'dir': media_subdir, 'ts': now().strftime('%H:%M')} | to_json }}
+  - action: local_file.update_file_path
+    target:
+      entity_id: !input alert_camera
+    data:
+      file_path: "/media/{{ media_subdir }}/{{ d.image_file }}"
+    continue_on_error: true
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "⚠️ Printer: possible failure ({{ pct }} %)"
+    message: >-
+      {{ d.task }} · {{ d.progress }} %
+
+      First detected at layer {{ d.first_layer }}/{{ d.total_layers }} (Z {{ z_first }})
+
+      ✂️ Last good layer {{ d.good_layer }} · Z {{ z_good }}
+    data:
+      image: "/media/local/{{ media_subdir }}/{{ d.image_file }}"
+      clickAction: !input click_url
+      url: !input click_url
+      tag: print-guard
+      sticky: "true"
+      channel: Print Guard
+      importance: high
+      priority: high
+      ttl: 0
+      actions:
+        - action: PRINT_GUARD_PAUSE
+          title: Pause print
+  - variables:
+      log_message: >-
+        Possible failure {{ pct }} % at layer {{ d.layer }}/{{ d.total_layers }} ({{ d.task }}).
+        First detected at layer {{ d.first_layer }} (Z {{ z_first }}),
+        last good layer {{ d.good_layer }} (Z {{ z_good }}).
+  - if:
+      - condition: template
+        value_template: "{{ logbook_entity | length > 0 }}"
+    then:
+      - action: logbook.log
+        data:
+          name: Print Guard
+          message: "{{ log_message }}"
+          entity_id: "{{ logbook_entity }}"
+    else:
+      - action: logbook.log
+        data:
+          name: Print Guard
+          message: "{{ log_message }}"

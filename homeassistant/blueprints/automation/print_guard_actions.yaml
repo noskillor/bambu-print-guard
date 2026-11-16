@@ -1,0 +1,158 @@
+blueprint:
+  name: Print Guard – Pause / Resume buttons
+  description: >
+    Handles the "Pause print" / "Resume" buttons of the Print Guard notification.
+    Presses the printer's pause or resume button, waits for the printer to confirm
+    and updates the *same* notification (it stays until you swipe it away) with the
+    alert details and the opposite button.
+  domain: automation
+  source_url: https://github.com/noskillor/bambu-print-guard/blob/main/homeassistant/blueprints/automation/print_guard_actions.yaml
+  input:
+    notify_device:
+      name: Phone
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    pause_button:
+      name: Printer pause button
+      selector:
+        entity:
+          filter:
+            - domain: button
+    resume_button:
+      name: Printer resume button
+      selector:
+        entity:
+          filter:
+            - domain: button
+    status_sensor:
+      name: Printer status sensor
+      description: Reports `pause` / `running` (ha-bambulab print status).
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    layer_sensor:
+      name: Current layer sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    task_sensor:
+      name: Task name sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    last_alert_helper:
+      name: Last-alert helper
+      description: Same input_text as in the alert blueprint.
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    click_url:
+      name: Open on tap
+      default: /lovelace/print-guard
+      selector:
+        text:
+
+mode: queued
+max: 3
+
+triggers:
+  - trigger: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: PRINT_GUARD_PAUSE
+    id: pause
+  - trigger: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: PRINT_GUARD_RESUME
+    id: resume
+
+variables:
+  status_sensor: !input status_sensor
+  layer_sensor: !input layer_sensor
+  task_sensor: !input task_sensor
+  helper: !input last_alert_helper
+  a: "{{ states(helper) | from_json(default={}) }}"
+  info: >-
+    {{ states(task_sensor) }} · now at layer {{ states(layer_sensor) }}
+    {% if a %}
+
+    Alert {{ a.ts }}: {{ a.c }} % at layer {{ a.l }}
+
+    First detected at layer {{ a.fl }} (Z {{ a.fz }} mm)
+
+    ✂️ Last good layer {{ a.gl }} · Z {{ a.gz }} mm{% endif %}
+  img: "{{ '/media/local/' ~ a.dir ~ '/' ~ a.img if a else '' }}"
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: pause
+        sequence:
+          - action: button.press
+            target:
+              entity_id: !input pause_button
+          - wait_template: "{{ is_state(status_sensor, 'pause') }}"
+            timeout:
+              seconds: 30
+            continue_on_timeout: true
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            title: >-
+              {{ '⏸️ Print paused' if wait.completed
+                 else '⚠️ Pause not confirmed (' ~ states(status_sensor) ~ ')' }}
+            message: "{{ info }}"
+            data:
+              image: "{{ img }}"
+              tag: print-guard
+              sticky: "true"
+              clickAction: !input click_url
+              url: !input click_url
+              channel: Print Guard
+              actions:
+                - action: PRINT_GUARD_RESUME
+                  title: Resume
+          - action: logbook.log
+            data:
+              name: Print Guard
+              message: "Print paused from the notification (layer {{ states(layer_sensor) }})."
+      - conditions:
+          - condition: trigger
+            id: resume
+        sequence:
+          - action: button.press
+            target:
+              entity_id: !input resume_button
+          - wait_template: "{{ is_state(status_sensor, 'running') }}"
+            timeout:
+              seconds: 30
+            continue_on_timeout: true
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            title: >-
+              {{ '▶️ Print resumed' if wait.completed
+                 else '⚠️ Resume not confirmed (' ~ states(status_sensor) ~ ')' }}
+            message: "{{ info }}"
+            data:
+              image: "{{ img }}"
+              tag: print-guard
+              sticky: "true"
+              clickAction: !input click_url
+              url: !input click_url
+              channel: Print Guard
+              actions:
+                - action: PRINT_GUARD_PAUSE
+                  title: Pause print
+          - action: logbook.log
+            data:
+              name: Print Guard
+              message: "Print resumed from the notification (layer {{ states(layer_sensor) }})."

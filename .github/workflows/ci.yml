@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install ruff pytest pillow
+      - run: ruff check .
+      - run: pytest -q
+
+  shell-and-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck deploy/lxc/install.sh deploy/proxmox/print-guard-ctl.sh
+      - run: pip install yamllint
+      - name: yamllint
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" docker-compose.yml .github homeassistant/dashboard
+      - name: Blueprints (with !input tags)
+        run: |
+          python - <<'EOF'
+          import glob, yaml
+          class L(yaml.SafeLoader): pass
+          L.add_constructor("!input", lambda l, n: l.construct_scalar(n))
+          for f in glob.glob("homeassistant/blueprints/**/*.yaml", recursive=True):
+              d = yaml.load(open(f, encoding="utf-8"), Loader=L)
+              assert "blueprint" in d and "actions" in d, f
+              print("ok", f)
+          EOF
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t print-guard ./print_guard
+      - run: docker run --rm print-guard python print_guard.py --version

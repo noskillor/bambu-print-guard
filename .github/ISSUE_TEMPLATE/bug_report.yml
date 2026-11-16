@@ -1,0 +1,35 @@
+name: Bug report
+description: Something does not work as described
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation
+      options:
+        - Docker Compose
+        - Native (Debian / Proxmox LXC)
+    validations:
+      required: true
+  - type: input
+    id: printer
+    attributes:
+      label: Printer model and firmware
+      placeholder: P1S, 01.10.00.00, LAN-only + developer mode
+  - type: input
+    id: ha
+    attributes:
+      label: Home Assistant and ha-bambulab version
+  - type: textarea
+    id: logs
+    attributes:
+      label: Guard log
+      description: "`journalctl -u print-guard -n 100` or `docker compose logs guard`. Remove tokens/IPs you don't want to share."
+      render: text

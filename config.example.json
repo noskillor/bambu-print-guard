@@ -1,0 +1,31 @@
+{
+  "ha_url": "http://homeassistant.local:8123",
+  "token_file": "/config/ha_token",
+
+  "camera": "camera.p1s_camera",
+  "status_sensor": "sensor.p1s_print_status",
+  "layer_sensor": "sensor.p1s_current_layer",
+  "total_layer_sensor": "sensor.p1s_total_layer_count",
+  "progress_sensor": "sensor.p1s_print_progress",
+  "task_sensor": "sensor.p1s_task_name",
+
+  "gcode_sensor": "",
+  "gcode_url_path": "/local/media/ha-bambulab/YOUR_PRINTER_SERIAL/prints/",
+
+  "webhook_id": "print_guard_alert",
+  "score_entity": "sensor.print_guard_score",
+
+  "ml_api": "http://ml:3333/p/",
+  "frame_base_url": "http://guard:8098",
+  "public_url": "http://DOCKER_HOST_IP:8098",
+  "data_dir": "/data",
+
+  "interval_s": 10,
+  "frame_score_min": 0.25,
+  "ewm_alert": 0.40,
+  "hits_needed": 3,
+  "hits_window": 4,
+  "cooldown_s": 900,
+  "min_layer": 3,
+  "safety_layers": 5
+}

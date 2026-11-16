@@ -1,0 +1,19 @@
+# Secrets and local configuration – never commit
+config/
+config.json
+ha_token
+*.token
+*-ha-token
+print-guard-ctl.conf
+
+# Runtime data
+data/
+*.jpg
+history.jsonl
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/

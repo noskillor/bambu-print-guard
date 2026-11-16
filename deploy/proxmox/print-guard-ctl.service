@@ -1,0 +1,6 @@
+[Unit]
+Description=Start/stop the print-guard container depending on the printer state
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/print-guard-ctl.sh
